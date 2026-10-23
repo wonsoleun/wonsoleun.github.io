@@ -1,11 +1,11 @@
 ---
 name: "Soleun Won"
 avatar: "shannon.jpg"
-shortBio: "Mathematician and electrical engineer known as the 'Father of Information Theory'. Pioneer in digital computing and cryptography."
-institution: "MIT, Cambridge MA"
+shortBio: "Aspiring AI developer interested in Physical AI, robotics, and intelligent systems that interact with the real world."
+institution: "Sungshin Women's University"
 ---
 
-I am a mathematician and electrical engineer best known for founding **Information Theory**. My work in the late 1940s established the theoretical foundations of modern digital communications and computing.
+I am a Bachelor of Engineering student in Artificial Intelligence, passionate about **Physical AI, robotics, and intelligent systems**. My interests include Vision-Language-Action (VLA) models and reinforcement learning, with a focus on developing AI that can perceive, reason, and act in the real world.
 
 ## My Life
 
