@@ -1,5 +1,5 @@
 ---
-name: "Claude Shannon"
+name: "Soleun Won"
 avatar: "shannon.jpg"
 shortBio: "Mathematician and electrical engineer known as the 'Father of Information Theory'. Pioneer in digital computing and cryptography."
 institution: "MIT, Cambridge MA"

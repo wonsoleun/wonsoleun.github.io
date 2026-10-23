@@ -1,6 +1,6 @@
 ---
 name: "Soleun Won"
-title: "Mathematician and Electrical Engineer"
+title: "Artificial Intelligence Engineer"
 experience:
   - role: "Research Mathematician"
     institution: "Bell Telephone Laboratories"
@@ -16,9 +16,9 @@ education:
     period: "1936 - 1940"
     thesis: "An Algebra for Theoretical Genetics"
     description: "Developed mathematical foundations for genetic inheritance."
-  - degree: "Bachelor of Science in Electrical Engineering"
-    institution: "University of Michigan"
-    period: "1932 - 1936"
+  - degree: "Bachelor of Engineering, Artificial Intelligence"
+    institution: "Sungshin Women's University"
+    period: "2024.03 - Present"
 ---
 
 ## Skills
