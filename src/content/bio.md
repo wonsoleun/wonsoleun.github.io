@@ -1,6 +1,6 @@
 ---
 name: "Soleun Won"
-avatar: "shannon.jpg"
+avatar: "steve.jpg"
 shortBio: "Aspiring AI developer interested in Physical AI, robotics, and intelligent systems that interact with the real world."
 institution: "Sungshin Women's University"
 ---
