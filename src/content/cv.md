@@ -1,5 +1,5 @@
 ---
-name: "Claude Shannon"
+name: "Soleun Won"
 title: "Mathematician and Electrical Engineer"
 experience:
   - role: "Research Mathematician"
