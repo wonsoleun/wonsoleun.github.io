@@ -18,8 +18,8 @@ education:
 ---
 
 ## Skills
-- Information Theory
 - Mathematics
-- Electrical Engineering
-- Cryptography
 - Computer Science
+
+## Awards
+- -
