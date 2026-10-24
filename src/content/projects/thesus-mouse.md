@@ -1,13 +1,10 @@
 ---
-title: "Theseus Maze-Solving Machine"
-description: "The first machine that demonstrated machine learning capabilities through maze navigation. Built with telephone relay circuits in 1950."
+title: "Autonomous Driving with Lane Detection"
+description: "A vision-based autonomous driving system that uses OpenCV and RANSAC for lane detection and enables vehicle navigation based on detected lane boundaries."
 tags:
-  - "AI"
-  - "Robotics"
-  - "Machine Learning"
-  - "Hardware"
+  - "Computer Vision"
+  - "AutonomousDriving"
 image: "/images/placeholder.svg"
-external_url: "https://en.wikipedia.org/wiki/Theseus_(robot)"
 ---
 
 ## Overview

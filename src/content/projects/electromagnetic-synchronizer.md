@@ -1,11 +1,11 @@
 ---
-title: "Electromagnetic Synchronizer"
-description: "An early project from my undergraduate days at MIT. A device to synchronize electromagnetic signals for communication systems."
+title: "WatchOut!"
+description: "An AI-powered video analysis system that detects suspicious activities in unmanned stores, identifies evidence scenes, and provides actionable response guidance."
 tags:
-  - "Engineering"
-  - "Hardware"
-  - "Communications"
-external_url: "https://en.wikipedia.org/wiki/Claude_Shannon"
+  - "Computer Vision"
+  - "AI Agent"
+  - "RAG"
+external_url: "-"
 ---
 
 ## Project Overview
