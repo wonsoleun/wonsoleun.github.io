@@ -2,23 +2,19 @@
 name: "Soleun Won"
 title: "Artificial Intelligence Engineer"
 experience:
-  - role: "Research Mathematician"
-    institution: "Bell Telephone Laboratories"
-    period: "1941 - 1972"
-    description: "Conducted groundbreaking research in information theory, cryptography, and digital computing."
-  - role: "Professor of Electrical Engineering"
-    institution: "MIT"
-    period: "1958 - 1978"
-    description: "Taught courses in information theory, switching theory, and mathematical foundations of computing."
+  - role: "AI & Robotics Project Member"
+    institution: "ToI Club, Sungshin Women's University"
+    period: "2026.03 - Present"
+    description: "Developing a vision-based autonomous driving system using OpenCV and RANSAC for lane detection and vehicle navigation. Gaining hands-on experience with Raspberry Pi and Arduino."
+  - role: "Undergraduate Research Assistant"
+    institution: "Marine Hydrodynamics AI Lab (MHAIL), Sungshin Women's University"
+    period: "2026.10 - Present"
+    description: "-"
 education:
-  - degree: "PhD in Mathematics"
-    institution: "MIT"
-    period: "1936 - 1940"
-    thesis: "An Algebra for Theoretical Genetics"
-    description: "Developed mathematical foundations for genetic inheritance."
   - degree: "Bachelor of Engineering, Artificial Intelligence"
     institution: "Sungshin Women's University"
     period: "2024.03 - Present"
+    GPA: "3.94/4.5 (Overall) · 4.03/4.5 (Major)"
 ---
 
 ## Skills
