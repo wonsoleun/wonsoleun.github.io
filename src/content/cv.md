@@ -14,7 +14,7 @@ education:
   - degree: "Bachelor of Engineering, Artificial Intelligence"
     institution: "Sungshin Women's University"
     period: "2024.03 - Present"
-    GPA: "3.94/4.5 (Overall) · 4.03/4.5 (Major)"
+    description: "Overall GPA: 3.94/4.5 · Major GPA: 4.03/4.5"
 ---
 
 ## Skills
