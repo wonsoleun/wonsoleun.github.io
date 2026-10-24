@@ -6,7 +6,7 @@ experience:
     institution: "Marine Hydrodynamics AI Lab (MHAIL), Sungshin Women's University"
     period: "2026.10 - Present"
     description: "-"
-  - role: "AI & Robotics Project Member"
+  - role: "Project Member"
     institution: "ToI Club, Sungshin Women's University"
     period: "2026.03 - Present"
     description: "Developing a vision-based autonomous driving system using OpenCV and RANSAC for lane detection and vehicle navigation. Gaining hands-on experience with Raspberry Pi and Arduino."
@@ -23,6 +23,3 @@ education:
 - Electrical Engineering
 - Cryptography
 - Computer Science
-
-## Biographical Summary
-Extra biographical notes or a summary can go here.
