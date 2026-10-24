@@ -7,22 +7,19 @@ institution: "Sungshin Women's University"
 
 I am a Bachelor of Engineering student in Artificial Intelligence, passionate about **Physical AI, robotics, and intelligent systems**. My interests include Vision-Language-Action (VLA) models and reinforcement learning, with a focus on developing AI that can perceive, reason, and act in the real world.
 
-## My Life
+## Research Interests
 
-Born in Petoskey, Michigan on April 30, 1916, I showed an early aptitude for engineering and mathematics. After studying at the University of Michigan, I completed my PhD at MIT where I famously applied Boolean algebra to electrical circuits. My master's thesis on relay switching circuits is considered one of the most important master's theses ever written.
+My research focus includes: **Embodied AI**, **Generalist Robotic Policies**, **VLA foundation models**, **Imitation Learning & Reinforcement Learning**, and **multimodal learning**.
 
-During World War, I worked at Bell Labs on fire control systems and cryptography, which led to my seminal work in information theory.
+My research interests focus on generalist robotic policies, embodied learning, and multimodal representation learning. I am particularly interested in how Vision-Language-Action (VLA) foundation models can generalize across diverse tasks and environments, and how reinforcement learning can improve robotic decision-making and adaptability.
 
 ## Current Work
 
-I continue to work on various problems at the intersection of mathematics, engineering, and computer science. My interests include artificial intelligence, pattern recognition, game theory, and the fundamental limits of computation.
+I am exploring the intersection of artificial intelligence, robotics, and machine learning. My current interests include Vision-Language-Action (VLA) models, imitation learning, reinforcement learning, and generalist robotic policies. I am particularly interested in how intelligent systems can learn from data and interaction to perform diverse tasks in real-world environments.
 
-I also enjoy juggling, unicycling, and playing the clarinet - I even built a juggling machine!
+I am also developing WatchOut!, an AI-powered video analysis project that identifies suspicious situations in unmanned stores and generates evidence-based reports with relevant response guidance.
 
-## Research Interests
-
-My research focus includes: **Information Theory**, **Cryptography**, **Digital Computing**, **Artificial Intelligence**, **Game Theory**, and **Switching Circuits**.
 
 ---
 
-*"I am a mathematician. I am interested in the fundamental limits on the rate at which information can be transmitted."*
+*"Hi, I'm Sol! Just a student dreaming of smarter robots and a little more intelligent world."*
