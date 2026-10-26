@@ -5,7 +5,7 @@ experience:
   - role: "Undergraduate Research Assistant"
     institution: "Marine Hydrodynamics AI Lab (MHAIL), Sungshin Women's University"
     period: "2026.10 - Present"
-    description: "-"
+    description: "Advisor: Prof. Yangjun Ahn"
   - role: "Project Member"
     institution: "ToI Club, Sungshin Women's University"
     period: "2026.03 - Present"
@@ -18,8 +18,8 @@ education:
 ---
 
 ## Skills
-- Mathematics
+- Python
 - Computer Science
 
 ## Awards
-- -
+- 
