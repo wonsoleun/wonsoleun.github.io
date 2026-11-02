@@ -71,10 +71,10 @@ $$ w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} $$
 
 $$ G_t = G_{t-1} + \left(\frac{\partial L}{\partial w_t}\right)^2 $$
 
-| 차이 | Adagrad | RMSProp |
+|  | Adagrad | RMSProp |
 |---|---|---|
-| 과거 gradient 제곱 | 전부 **동일한 비중으로 누적** | **지수 이동 평균(EMA)** 으로 과거에 점점 작은 가중치 부여 |
-| 분모의 변화 | 계속 커지기만 하고 줄어들지 않음 | 최근 값 위주로 유지됨 |
+| 과거 gradient 제곱 | 전부 **동일한 비중으로 누적** | **EMA** 로 과거에 점점 작은 가중치 부여 |
+
 
 ### Adagrad의 문제점
 
