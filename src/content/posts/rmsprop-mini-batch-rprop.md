@@ -1,7 +1,7 @@
 ---
 title: "RMSProp"
 date: "2026-11-02"
-description: "rprop의 아이디어와 mini-batch에서 잘 동작하지 않는 이유를 짚어 보고, 이를 보완한 RMSProp과 Adagrad와의 차이를 정리했습니다."
+description: "rprop의 아이디어와 mini-batch에서 잘 동작하지 않는 이유를 짚어 보고, 이를 보완한 RMSProp과 Adagrad와의 차이를 정리"
 author: "Soleun Won"
 tags:
   - "Optimization"
@@ -71,7 +71,7 @@ $$ w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} $$
 
 $$ G_t = G_{t-1} + \left(\frac{\partial L}{\partial w_t}\right)^2 $$
 
-| | Adagrad | RMSProp |
+| 차이 | Adagrad | RMSProp |
 |---|---|---|
 | 과거 gradient 제곱 | 전부 **동일한 비중으로 누적** | **지수 이동 평균(EMA)** 으로 과거에 점점 작은 가중치 부여 |
 | 분모의 변화 | 계속 커지기만 하고 줄어들지 않음 | 최근 값 위주로 유지됨 |
