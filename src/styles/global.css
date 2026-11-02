@@ -954,3 +954,14 @@ a:hover,
         font-size: 0.85rem;
     }
 }
+
+.prose table {
+    border-collapse: collapse !important;
+    width: 100%;
+}
+
+.prose th,
+.prose td {
+    border: 1px solid #888888 !important;
+    padding: 0.5rem 0.75rem;
+}
