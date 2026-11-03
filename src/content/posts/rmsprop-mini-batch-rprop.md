@@ -10,7 +10,7 @@ tags:
 
 ## 1. RProp
 
-### 문제 인식: 모든 weight에 적절한 하나의 Global Learning Rate 설정의 어려움
+### - 문제 인식: 모든 weight에 적절한 하나의 Global Learning Rate 설정의 어려움
 
 같은 learning rate를 쓰더라도 weight마다 gradient의 크기가 크게 차이난다면, 어떤 weight는 너무 크게 움직이고 어떤 weight는 거의 움직이지 않을 수 있다. 
 
@@ -25,10 +25,10 @@ $$
 
 따라서 RProp은 **gradient의 sign만 사용하는 아이디어**와 **weight마다 step size를 따로 조절하는 아이디어**를 결합한다.
 
-
+---
 ## 2. RProp은 step size를 어떻게 조절할까?
 
-step size = 해당 weight를 한 번 업데이트할 때 이동하는 크기
+step size = 해당 weight를 한 번 업데이트할 때 이동하는 크기 <br>
 RProp은 **이전 gradient와 현재 gradient의 부호를 비교**해서 step size 조절한다.
 
 **Case 1. 이전 gradient 부호 = 현재 gradient 부호**
@@ -47,10 +47,10 @@ Optimal point를 향해 이동하다가 너무 크게 움직여서 Optimal point
 
 **RProp 정리**: gradient의 부호로 업데이트 방향을 정하고, 부호가 유지되는지 바뀌는지에 따라 weight별 step size를 조절한다.
 
-
+---
 ## 3. 왜 RProp은 mini-batch에서 잘 안 될까?
 
-예시: 어떤 weight의 gradient가 10번의 mini-batch에서 다음과 같이 계산되었다고 가정하자.
+**예시: 어떤 weight의 gradient가 10번의 mini-batch에서 다음과 같이 계산되었다고 가정하자.**
 
 - gradinet: +0.1 (9번)
 - gradinet: -0.9 (1번)
@@ -61,7 +61,15 @@ $$
 w_{t+1}=w_t-\eta g_t
 $$
 
-여기서 (w_t)는 현재 weight, (\eta)는 learning rate, (g_t)는 현재 mini-batch에서 계산한 gradient를 의미한다.
+<br>
+
+$w_t$: 현재 weight
+
+$\eta$: learning rate
+
+$g_t$: 현재 mini-batch에서 계산한 gradient
+
+<br>
 주어진 10개의 gradient를 적용해 전체 weight 변화량을 구하면 아래와 같다.
 
 $$
@@ -95,11 +103,13 @@ $$
 w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
 $$
 
-### EMA
+### - EMA
 
 $$
 \text{MeanSquare}(w,t) = 0.9 \times \text{MeanSquare}(w,t-1) + 0.1 \times g_t^2
 $$
+
+<br>
 
 $\text{MeanSquare}(w,t-1)$: 이전 시점까지 계산된 gradient 제곱의 이동평균
 
@@ -116,7 +126,7 @@ $0.1$: 현재 gradient에 부여하는 가중치
 
 <br>
 
-예시: decay rate = 0.9
+**예시: decay rate = 0.9 이라 한다면**
 
 $$
 \begin{aligned}
@@ -136,6 +146,8 @@ $$
 $$ 
 w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
 $$
+
+<br>
 
 $w_t$: 현재 weight
 
@@ -157,13 +169,15 @@ EMA를 이용하면 최근 gradient의 크기에 따라 업데이트 크기를 �
 
 즉, RMSProp은 **최근 gradient의 크기를 기준으로 각 weight의 step size(업데이트 크기)를 적응적으로 조절하는 알고리즘**이다.
 
-
+---
 ## 5. Adagrad와 비교
 
-### Adagrad
+### - Adagrad
 $$ 
 G_t = G_{t-1} + \left(\frac{\partial L}{\partial w_t}\right)^2 
 $$
+
+<br>
 
 $G_t$: 현재까지 누적된 gradient 제곱의 합
 
@@ -183,7 +197,7 @@ $$
 
 <br>
 
-### RMSProp
+### - RMSProp
 $$
 w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
 $$
@@ -195,7 +209,7 @@ RMSProp과의 수식을 비교하면 둘의 차이를 더 쉽게 이해할 수 �
 | 과거 gradient 제곱 | 전부 **동일한 비중으로 누적** | **EMA** 로 과거에 점점 작은 가중치 부여 |
 
 
-### Adagrad의 문제점
+### - Adagrad의 문제점
 
 gradient 제곱을 계속 더하기 때문에 누적합은 절대 줄어들지 않는다. 즉 분모가 계속 커지므로 학습이 진행될수록 실제 step size(learning rate를 분모로 나눈 값)가 점점 작아지고, 심해지면 학습이 사실상 멈추게 된다.
 
