@@ -25,6 +25,7 @@ $$
 
 따라서 RProp은 **gradient의 sign만 사용하는 아이디어**와 **weight마다 step size를 따로 조절하는 아이디어**를 결합한다.
 
+
 ## 2. RProp은 step size를 어떻게 조절할까?
 
 step size = 해당 weight를 한 번 업데이트할 때 이동하는 크기
@@ -41,6 +42,7 @@ Optimal point를 향해 이동하다가 너무 크게 움직여서 Optimal point
 실제 구현에서는 step size가 무한히 커지거나 지나치게 작아지는 것을 막기 위해 하한과 상한을 설정한다. 이는 Mike Shuster의 조언으로, 대략 0.000001 이상 50 이하의 범위를 사용한다.
 
 **RProp 정리**: gradient의 부호로 업데이트 방향을 정하고, 부호가 유지되는지 바뀌는지에 따라 weight별 step size를 조절한다.
+
 
 ## 3. 왜 RProp은 mini-batch에서 잘 안 될까?
 
@@ -76,6 +78,7 @@ SGD는 연속된 mini-batch의 gradient를 크기에 따라 가중하여 반영�
 
 **정리**: rprop은 full-batch 학습에 적합한 방법이다.
 
+
 ## 4. RMSProp: RProp의 mini-batch 버전
 
 **인접한 mini-batch끼리는 나누는 값이 비슷하도록 강제하면 어떨까?**
@@ -85,6 +88,7 @@ RMSProp은 RProp의 한계를 해결하기 위해 제안된 방법으로, **grad
 $$ 
 w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
 $$
+
 
 ### EMA
 
@@ -102,6 +106,7 @@ $0.1$: 현재 gradient에 부여하는 가중치
 
 즉, MeanSquare(w,t)은 과거 정보 90%와 현재 gradient 제곱의 10%를 반영하여 계산한다.
 여기서 중요한 점은 gradient 자체가 아니라 gradient의 제곱을 사용한다는 것이다. 따라서 양수와 음수의 방향은 고려하지 않고, gradient의 크기 정보만 추적할 수 있다.
+
 
 예시: decay rate = 0.9
 
@@ -140,18 +145,19 @@ EMA를 이용하면 최근 gradient의 크기에 따라 업데이트 크기를 �
 
 즉, RMSProp은 **최근 gradient의 크기를 기준으로 각 weight의 step size(업데이트 크기)를 적응적으로 조절하는 알고리즘**이다.
 
+
 ## 5. Adagrad와 비교
 
 ### Adagrad
 $$ 
-\(G_t\) = \(G_{t-1})\ + \left(\frac{\partial L}{\partial w_t}\right)^2 
+G_t = G_{t-1} + \left(\frac{\partial L}{\partial w_t}\right)^2 
 $$
 
-$\(G_t\)$: 현재까지 누적된 gradient 제곱의 합
+$G_t$: 현재까지 누적된 gradient 제곱의 합
 
-$\(G_{t-1}\)$: 이전 시점까지 누적된 gradient 제곱의 합
+$G_{t-1}$: 이전 시점까지 누적된 gradient 제곱의 합
 
-$\(g_t\)$: 현재 시점의 gradient
+$g_t$: 현재 시점의 gradient
 
 $$
 w_{t+1}
@@ -178,6 +184,7 @@ RMSProp과의 수식을 비교하면 둘의 차이를 더 쉽게 이해할 수 �
 gradient 제곱을 계속 더하기 때문에 누적합은 절대 줄어들지 않는다. 즉 분모가 계속 커지므로 학습이 진행될수록 실제 step size(learning rate를 분모로 나눈 값)가 점점 작아지고, 심해지면 학습이 사실상 멈추게 된다.
 
 RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문에 이 문제를 피할 수 있다.
+
 
 ## 정리
 
