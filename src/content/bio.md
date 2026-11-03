@@ -1,6 +1,6 @@
 ---
 name: "Soleun Won"
-avatar: "steve.jpg"
+avatar: "brown_ver.jpg"
 shortBio: "Aspiring AI developer interested in Physical AI, robotics, and intelligent systems that interact with the real world."
 institution: "Sungshin Women's University"
 ---
@@ -9,9 +9,14 @@ I am a Bachelor of Engineering student in Artificial Intelligence, passionate ab
 
 ## Research Interests
 
-My research focus includes: **Embodied AI**, **Generalist Robotic Policies**, **VLA foundation models**, **Imitation Learning & Reinforcement Learning**, and **multimodal learning**.
+- Embodied AI
+- Generalist Robotic Policies
+- Vision-Language-Action (VLA) Models
+- Reinforcement Learning
 
-My research interests focus on generalist robotic policies, embodied learning, and multimodal representation learning. I am particularly interested in how Vision-Language-Action (VLA) foundation models can generalize across diverse tasks and environments, and how reinforcement learning can improve robotic decision-making and adaptability.
+My research interests lie in **Embodied AI, Generalist Robotic Policies, and Multimodal Learning**. I am particularly interested in developing generalist robotic agents that can perceive, reason, and act in diverse real-world environments.
+
+My research focuses on **Vision-Language-Action (VLA) foundation models** and their ability to generalize across tasks and environments. I am also interested in **Imitation Learning and Reinforcement Learning** as complementary approaches to improving robotic policy learning, decision-making, and adaptability.
 
 ## Current Work
 
