@@ -36,6 +36,7 @@ RProp은 **이전 gradient와 현재 gradient의 부호를 비교**해서 step s
 weight를 계속 같은 방향으로 움직이라는 의미로, 해당 weight의 step size를 증가시킨다. (예: 1.2배)
 
 <br>
+
 **Case 2. 이전 gradient 부호 ≠ 현재 gradient 부호**
 
 Optimal point를 향해 이동하다가 너무 크게 움직여서 Optimal point를 지나쳐 반대편으로 넘어갔을 가능성이 있다는 의미로 해석할 수 있다. 해당 weight의 step size를 감소시킨다. (예: 0.5배)
@@ -43,6 +44,7 @@ Optimal point를 향해 이동하다가 너무 크게 움직여서 Optimal point
 실제 구현에서는 step size가 무한히 커지거나 지나치게 작아지는 것을 막기 위해 하한과 상한을 설정한다. 이는 Mike Shuster의 조언으로, 대략 0.000001 이상 50 이하의 범위를 사용한다.
 
 <br>
+
 **RProp 정리**: gradient의 부호로 업데이트 방향을 정하고, 부호가 유지되는지 바뀌는지에 따라 weight별 step size를 조절한다.
 
 
@@ -79,6 +81,7 @@ SGD는 연속된 mini-batch의 gradient를 크기에 따라 가중하여 반영�
 따라서 mini-batch 환경에서도 gradient의 크기 변화를 고려하면서 업데이트 크기를 적절하게 조절할 방법이 필요하다. 
 
 <br>
+
 **정리**: rprop은 full-batch 학습에 적합한 방법이다.
 
 ---
@@ -107,10 +110,12 @@ $0.9$: 과거 정보에 부여하는 가중치
 $0.1$: 현재 gradient에 부여하는 가중치
 
 <br>
+
 즉, MeanSquare(w,t)은 과거 정보 90%와 현재 gradient 제곱의 10%를 반영하여 계산한다.
 여기서 중요한 점은 gradient 자체가 아니라 gradient의 제곱을 사용한다는 것이다. 따라서 양수와 음수의 방향은 고려하지 않고, gradient의 크기 정보만 추적할 수 있다.
 
 <br>
+
 예시: decay rate = 0.9
 
 $$
@@ -123,6 +128,7 @@ MeanSquare_t
 $$
 
 따라서 최근 gradient의 크기에 더 큰 가중치를 부여하고, 오래된 gradient의 영향은 점점 줄어들게 된다.
+
 <br>
 
 다음으로, 계산한 EMA를 이용하여 weight를 업데이트한다.
@@ -142,6 +148,7 @@ $\text{MeanSquare}(w,t)$: gradient 제곱의 지수이동평균
 $\epsilon$: 0으로 나누는 것을 방지하기 위한 작은 값
 
 <br>
+
 여기서 EMA의 제곱근으로 현재 gradient를 나누는 이유는 gradient의 크기를 정규화하기 위함이다.
 EMA를 이용하면 최근 gradient의 크기에 따라 업데이트 크기를 자동으로 조절할 수 있다.
 
@@ -165,6 +172,7 @@ $G_{t-1}$: 이전 시점까지 누적된 gradient 제곱의 합
 $g_t$: 현재 시점의 gradient
 
 <br>
+
 $$
 w_{t+1}
 =
@@ -174,6 +182,7 @@ w_t -
 $$
 
 <br>
+
 ### RMSProp
 $$
 w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
@@ -193,6 +202,7 @@ gradient 제곱을 계속 더하기 때문에 누적합은 절대 줄어들지 �
 RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문에 이 문제를 피할 수 있다.
 
 <br>
+
 ## 정리
 
 - **RProp**: gradient의 부호만 사용하고, weight마다 step size를 조절. full-batch 학습에 적합.
