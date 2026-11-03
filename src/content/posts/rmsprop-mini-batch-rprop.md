@@ -16,7 +16,9 @@ tags:
 
 ### 해결 방법 제시: gradient의 sign만 반영
 
-$$ \frac{g}{\lvert g \rvert} = \text{sign}(g) $$
+$$ 
+\frac{g}{\lvert g \rvert} = \text{sign}(g)
+$$
 
 - **장점**: gradient가 아주 작더라도 0이 아니기만 하면 일정한 크기로 업데이트할 수 있다. 즉, gradient가 거의 0에 가까운 평평한 구간(plateau)에서도 학습이 멈추지 않는다.
 - **한계**: 실제로는 weight마다 적절한 업데이트 크기가 다를 수 있음에도 모든 weight가 같은 크기(1)로 업데이트된다. 
@@ -90,7 +92,7 @@ $$
 \text{MeanSquare}(w,t) = 0.9 \times \text{MeanSquare}(w,t-1) + 0.1 \times g_t^2
 $$
 
-$MeanSquare(w,t-1)$: 이전 시점까지 계산된 gradient 제곱의 이동평균
+$\text{MeanSquare}(w,t-1)$: 이전 시점까지 계산된 gradient 제곱의 이동평균
 
 $g_t^2$: 현재 mini-batch에서 계산된 gradient의 제곱
 
@@ -142,7 +144,21 @@ EMA를 이용하면 최근 gradient의 크기에 따라 업데이트 크기를 �
 
 ### Adagrad
 $$ 
-G_t = G_{t-1} + \left(\frac{\partial L}{\partial w_t}\right)^2 
+\(G_t\) = \(G_{t-1})\ + \left(\frac{\partial L}{\partial w_t}\right)^2 
+$$
+
+$\(G_t\)$: 현재까지 누적된 gradient 제곱의 합
+
+$\(G_{t-1}\)$: 이전 시점까지 누적된 gradient 제곱의 합
+
+$\(g_t\)$: 현재 시점의 gradient
+
+$$
+w_{t+1}
+=
+w_t -
+\frac{\eta}{\sqrt{G_t}+\epsilon}
+\frac{\partial L}{\partial w_t}
 $$
 
 ### RMSProp
@@ -165,5 +181,5 @@ RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문�
 
 ## 정리
 
-- **rprop**: gradient의 부호만 사용하고, weight마다 step size를 조절. full-batch 학습에 적합.
+- **RProp**: gradient의 부호만 사용하고, weight마다 step size를 조절. full-batch 학습에 적합.
 - **RMSProp**: gradient 제곱의 지수 이동 평균으로 나누어, rprop의 아이디어를 mini-batch에서도 쓸 수 있게 만든 방법.
