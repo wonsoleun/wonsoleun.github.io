@@ -49,21 +49,21 @@ Optimal point를 향해 이동하다가 너무 크게 움직여서 Optimal point
 
 Mini-batch SGD의 weight 업데이트 수식은 다음과 같다.
 
-[
+$$
 w_{t+1}=w_t-\eta g_t
-]
+$$
 
 여기서 (w_t)는 현재 weight, (\eta)는 learning rate, (g_t)는 현재 mini-batch에서 계산한 gradient를 의미한다.
 주어진 10개의 gradient를 적용해 전체 weight 변화량을 구하면 아래와 같다.
 
-[
+$$
 \begin{aligned}
 \Delta w
 &=-\eta\sum_{t=1}^{10}g_t\
 &=-\eta[9(0.1)+(-0.9)]\
 &=0
 \end{aligned}
-]
+$$
 
 따라서 주어진 gradient가 유지된다고 가정하면, 10번의 mini-batch 업데이트 이후 weight는 초기값과 동일하게 유지된다.
 SGD는 연속된 mini-batch의 gradient를 크기에 따라 가중하여 반영하므로, 여러 gradient의 평균을 내는 것과 유사한 효과를 갖는다.
@@ -80,18 +80,22 @@ SGD는 연속된 mini-batch의 gradient를 크기에 따라 가중하여 반영�
 
 RMSProp은 RProp의 한계를 해결하기 위해 제안된 방법으로, **gradient 제곱의 지수이동평균(Exponential Moving Average, EMA)**을 활용한다.
 
-$$ w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} $$
+$$ 
+w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
+$$
 
 ### EMA
 
 $$
-MeanSquare(w,t) =
-0.9 MeanSquare(w,t-1) + 0.1g_t^2
+\text{MeanSquare}(w,t) = 0.9 \times \text{MeanSquare}(w,t-1) + 0.1 \times g_t^2
 $$
 
 $MeanSquare(w,t-1)$: 이전 시점까지 계산된 gradient 제곱의 이동평균
+
 $g_t^2$: 현재 mini-batch에서 계산된 gradient의 제곱
+
 $0.9$: 과거 정보에 부여하는 가중치
+
 $0.1$: 현재 gradient에 부여하는 가중치
 
 즉, MeanSquare(w,t)은 과거 정보 90%와 현재 gradient 제곱의 10%를 반영하여 계산한다.
@@ -112,12 +116,18 @@ $$
 
 다음으로, 계산한 EMA를 이용하여 weight를 업데이트한다.
 
-$$ w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} $$
+$$ 
+w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
+$$
 
 $w_t$: 현재 weight
+
 $\eta$: Learning Rate
+
 $g_t$: 현재 mini-batch의 gradient
-$MeanSquare(w,t)$: gradient 제곱의 지수이동평균
+
+$\text{MeanSquare}(w,t)$: gradient 제곱의 지수이동평균
+
 $\epsilon$: 0으로 나누는 것을 방지하기 위한 작은 값
 
 여기서 EMA의 제곱근으로 현재 gradient를 나누는 이유는 gradient의 크기를 정규화하기 위함이다.
@@ -131,10 +141,14 @@ EMA를 이용하면 최근 gradient의 크기에 따라 업데이트 크기를 �
 ## 5. Adagrad와 비교
 
 ### Adagrad
-$$ G_t = G_{t-1} + \left(\frac{\partial L}{\partial w_t}\right)^2 $$
+$$ 
+G_t = G_{t-1} + \left(\frac{\partial L}{\partial w_t}\right)^2 
+$$
 
 ### RMSProp
-$$ w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} $$
+$$
+w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
+$$
 
 RMSProp과의 수식을 비교하면 둘의 차이를 더 쉽게 이해할 수 있다.
 
