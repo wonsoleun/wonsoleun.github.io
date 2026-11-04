@@ -21,6 +21,7 @@ I am interested in building generalist robotic agents that can perceive, reason,
 I am developing **WatchOut!**, an AI-powered video analysis system that detects suspicious behavior in unmanned stores and generates evidence-based reports with suggested response actions.
 
 I am also building a **domain-specific chatbot** for the shipbuilding industry that answers questions based on technical documents, helping users find accurate information quickly.
+
 ---
 
 *"Hi, I'm Sol! Just a student dreaming of smarter robots and a little more intelligent world."*

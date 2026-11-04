@@ -170,6 +170,8 @@ EMA를 이용하면 현재 gradient의 크기에 따라 업데이트 크기를 �
 RMSProp은 gradient가 가파른 곳에서는 step size를 줄여 조금씩 탐색하고, gradient가 평평한 곳에서는 step size를 크게 해 성큼성큼 탐색한다.
 즉, RMSProp은 **최근 gradient의 크기를 기준으로 각 weight의 step size(업데이트 크기)를 적응적으로 조절하는 알고리즘**이다.
 
+<br>
+
 ---
 ## 5. Adagrad와 비교
 
@@ -209,6 +211,7 @@ RMSProp과의 수식을 비교하면 둘의 차이를 더 쉽게 이해할 수 �
 |---|---|---|
 | 과거 gradient 제곱 | 전부 **동일한 비중으로 누적**(Sum) | **Decay rate**으로 가중평균(Averge) |
 
+<br>
 
 ### - Adagrad의 문제점
 
@@ -222,8 +225,9 @@ RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문�
 
 그다음 EMA = (0.9 × 90) + (0.1 × 0) = 81
 <br>
+<br>
 
-### 추가 학습 - Adam과 RMSProp의 연계성을 위주로 이해하면 쉽다!
+### - 추가 학습 - Adam을 이해하기 위해
 
 - Second Uncentered Moment = $g^2$
 기울기의 제곱($g^2$) = Second Uncentered Moment <br>
@@ -242,7 +246,7 @@ RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문�
 
 ## 6. Adam
 
-### First Moment
+### - First Moment
 
 momentum과 완전히 같은 수식이다.
 
@@ -268,7 +272,7 @@ $$
 헷갈리지 말 점은 $\beta$ 1을 사용한다. 
 <br>
 
-### Second Moment
+### - Second Moment
 
 위에서 봤던 EMA와 완전히 같은 수식이다. 
 
@@ -299,9 +303,10 @@ $\beta 2 = 0.999$ 의 원래 의도는 과거 데이터의 비중을 99.9퍼센�
 
 Adam에서는 이 문제를 해결하기 위해 **Bias Correction**을 적용한다.
 
-### Bias Correction
+### - Bias Correction
 
 - First Moment
+
 $m_t$ 는 과거 gradient의 가중합이다. 
 
 $$
@@ -328,6 +333,19 @@ $$
 
 $t$ 가 커지면 $\beta^t \to 0$ 이 되어 보정 계수가 1에 가까워지므로, 보정은 학습 초반에만 작동하게 된다.
 
+따라서 최종적인 Adam의 수식은 다음과 같다.
+
+$$
+w_t = w_{t-1} - \eta \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}
+$$
+
+<br>
+
+---
+
+## 7. AdamW
+
+### - Adam의 한계
 
 ## 정리
 
