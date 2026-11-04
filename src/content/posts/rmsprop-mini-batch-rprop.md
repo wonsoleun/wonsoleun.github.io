@@ -1,7 +1,7 @@
 ---
 title: "Optimizer"
 date: "2026-11-02"
-description: "SGD, Adagrad, RProp, RMSProp, Adam, AdamW"
+description: "SGD, Momentum, Adagrad, RProp, RMSProp, Adam, AdamW"
 author: "Soleun Won"
 tags:
   - "Optimization"
@@ -95,15 +95,17 @@ SGD는 연속된 mini-batch의 gradient를 크기에 따라 가중하여 반영�
 ---
 ## 4. RMSProp: RProp의 mini-batch 버전
 
-**인접한 mini-batch끼리는 나누는 값이 비슷하도록 강제하면 어떨까?**
+**Why not force the number we divide by to be very similar for adjacent mini-batches?**
 
-RMSProp은 RProp의 한계를 해결하기 위해 제안된 방법으로, **gradient 제곱의 지수이동평균(Exponential Moving Average, EMA)**을 활용한다.
+RMSProp은 RProp의 한계에서 고안된 방법으로, gradient 제곱의 지수이동평균(Exponential Moving Average, EMA)을 활용한다.
 
 $$ 
 w_{t+1} = w_t - \eta \frac{g_t}{\sqrt{\text{MeanSquare}(w,t)} + \epsilon} 
 $$
 
-### - EMA
+### - EMA (Exponential Moving Average)
+
+**Geoffrey Hinton 교수는 decay rate = 0.9로 두는 걸 제안했다.**
 
 $$
 \text{MeanSquare}(w,t) = 0.9 \times \text{MeanSquare}(w,t-1) + 0.1 \times g_t^2
@@ -121,12 +123,10 @@ $0.1$: 현재 gradient에 부여하는 가중치
 
 <br>
 
-즉, MeanSquare(w,t)은 과거 정보 90%와 현재 gradient 제곱의 10%를 반영하여 계산한다.
-여기서 중요한 점은 gradient 자체가 아니라 gradient의 제곱을 사용한다는 것이다. 따라서 양수와 음수의 방향은 고려하지 않고, gradient의 크기 정보만 추적할 수 있다.
+$\text{MeanSquare}(w,t)$ 은 과거 정보 90%와 현재 gradient 제곱의 10%를 반영하여 계산한다.
+여기서 중요한 점은 현재 gradient의 제곱을 사용한다는 것이다. 따라서 양수와 음수의 방향은 고려하지 않고, gradient의 크기 정보만 추적할 수 있다.
 
 <br>
-
-**예시: decay rate = 0.9 이라 한다면**
 
 $$
 \begin{aligned}
@@ -162,11 +162,12 @@ $\epsilon$: 0으로 나누는 것을 방지하기 위한 작은 값
 <br>
 
 여기서 EMA의 제곱근으로 현재 gradient를 나누는 이유는 gradient의 크기를 정규화하기 위함이다.
-EMA를 이용하면 최근 gradient의 크기에 따라 업데이트 크기를 자동으로 조절할 수 있다.
+EMA를 이용하면 현재 gradient의 크기에 따라 업데이트 크기를 자동으로 조절할 수 있다.
 
-- 최근 gradient의 크기가 커지면, 분모가 커지면서 weight의 업데이트 폭이 줄어든다.
-- 반대로 최근 gradient의 크기가 작아지면, 분모가 작아지면서 상대적으로 더 큰 업데이트가 가능해진다.
+- 현재 gradient의 크기가 커지면, 분모가 커지면서 weight의 업데이트 폭이 RMSProp 적용 전보다 줄어들게 된다.
+- 반대로 현재 gradient의 크기가 작아지면, 분모가 작아지면서 상대적으로 더 큰 업데이트가 가능해진다.
 
+RMSProp은 gradient가 가파른 곳에서는 step size를 줄여 조금씩 탐색하고, gradient가 평평한 곳에서는 step size를 크게 해 성큼성큼 탐색한다.
 즉, RMSProp은 **최근 gradient의 크기를 기준으로 각 weight의 step size(업데이트 크기)를 적응적으로 조절하는 알고리즘**이다.
 
 ---
@@ -206,18 +207,247 @@ RMSProp과의 수식을 비교하면 둘의 차이를 더 쉽게 이해할 수 �
 
 |  | Adagrad | RMSProp |
 |---|---|---|
-| 과거 gradient 제곱 | 전부 **동일한 비중으로 누적** | **EMA** 로 과거에 점점 작은 가중치 부여 |
+| 과거 gradient 제곱 | 전부 **동일한 비중으로 누적**(Sum) | **Decay rate**으로 가중평균(Averge) |
 
 
 ### - Adagrad의 문제점
 
 gradient 제곱을 계속 더하기 때문에 누적합은 절대 줄어들지 않는다. 즉 분모가 계속 커지므로 학습이 진행될수록 실제 step size(learning rate를 분모로 나눈 값)가 점점 작아지고, 심해지면 학습이 사실상 멈추게 된다.
 
-RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문에 이 문제를 피할 수 있다.
+RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문에 분모가 줄어들 수도 있다. 분모가 결국 합으로 이뤄져 있어서 무한히 커진다고 생각할 수 있지만 가중치(0.9와 0.1)의 합이 정확히 1이기 때문에, 분모는 최근 기울기 제곱들의 평균적인 크기(Root Mean Square)에 수렴하게 된다.
+
+**예시: gradient = 0 에 도달한 경우**
+
+다음 EMA = (0.9 × 100) + (0.1 × 0) = 90
+
+그다음 EMA = (0.9 × 90) + (0.1 × 0) = 81
+<br>
+
+### 추가 학습 - Adam과 RMSProp의 연계성을 위주로 이해하면 쉽다!
+
+- Second Uncentered Moment = $g^2$
+기울기의 제곱($g^2$) = Second Uncentered Moment <br>
+딥러닝의 최적화 과정에서 gradient의 평균은 보통 0에 수렴한다고 가정하기 때문에, 기울기의 제곱은 곧 기울기의 분산(Variance)을 의미하게 된다. 즉, '방향(+, -)'은 무시하고 '최근 기울기가 얼마나 크게 요동치고 있는가(변동성, Magnitude)'를 측정하는 지표를 의미한다.
+
+- EWMA (Exponentially Weighted Moving Average) = $E[g^2]$
+수식에서 쓰인 $0.9$와 $0.1$의 가중치 합을 통해, 최근 데이터에는 큰 가중치(0.1)를 주고 과거 데이터에는 지수적으로 감쇠하는 가중치(e.g. $0.1 \times 0.9$, $0.1 \times 0.9^2$ ...)를 곱해 더한다. 이를 공식 용어로 지수 가중 이동 평균(EWMA)이라고 부르며, 수식에서는 기울기 제곱에 대한 기댓값 $E[g^2]$를 추정하는 과정으로 이해하면 된다.
+
+- RMS = $\sqrt{E[g^2]}$
+앞서 구한 EWMA 값에 최종적으로 제곱근(루트, $\sqrt{}$)을 씌운다.
+어떤 값들을 제곱해서 평균을 낸 뒤 다시 루트를 씌우는 것을 RMS(Root Mean Square)라고 부르며, 이는 +와 -를 오가는 데이터의 Effective Magnitude를 나타낼 때 사용한다.
 
 <br>
+
+---
+
+## 6. Adam
+
+### First Moment
+
+momentum과 완전히 같은 수식이다.
+
+- Momentum
+
+Momentum은 SGD의 문제점(Saddle point, local minima, bouncing out of the valley, and jittering)을 해결하기 위한 방법이다. <br>
+속도항을 추가하여 문제들을 해결하였다. 
+$$
+v_{t+1} = \rho \times v_t + \nabla f(x_t)
+$$
+
+여기서 $\rho$ 는 얼마나 많은 momentum을 가질지 결정하는 hyper parameter로, $\rho$ 가 커지면 새로운 속도 $v_{t+1}$ 은 현재 속도 $v_t$ 에 더 의존하게 된다. 이렇게 속도항을 통해 누적해준 후 weight 업데이트한다.
+$$
+w_{t+1} = w_t + \alpha \times v_{t+1}
+$$
+
+- First Moment
+
+$$
+m_t = \beta \times m_{t-1} + (1 - \beta) \times g_t
+$$
+
+헷갈리지 말 점은 $\beta$ 1을 사용한다. 
+<br>
+
+### Second Moment
+
+위에서 봤던 EMA와 완전히 같은 수식이다. 
+
+- EMA
+$$
+\text{MeanSquare}(w,t) = \beta \times \text{MeanSquare}(w,t-1) + (1-\beta) \times g_t^2
+$$
+
+- Second Moment
+$$
+v_t = \beta \times v_{t-1} + (1 - \beta) \times g_t^2
+$$
+
+헷갈리지 말 점은 $\beta$ 2를 사용한다. <br>
+즉 Adam은 Momentum과 RMSProp의 결합으로 구성된 Optimizer로, 같은 방향으로 계속 이동하면 점차 속도가 붙게 만든다.
+
+그런데 **문제가 발생**한다. <br>
+$\beta$ 1, $\beta$ 2는 1에 매우 가까운 값으로 보통 초기화된다. (0.9나 0.999같은)
+그리고 설계에서 first_moment = 0, second_moment = 0으로 초기화한다면, 분모가 0이 되어 초기값이 매우 커지게 된다. 
+
+$$
+w_t = w_{t-1} - \eta \frac{m_t}{\sqrt{v_t} + \epsilon}
+$$
+
+**예시** <br>
+$v_1 = (0.999 \times 0) + (1 - 0.999) \times g_1^2$ 이 되어서 $v_1 = (0.001) \times g_1^2$ 이 된다. <br>
+$\beta 2 = 0.999$ 의 원래 의도는 과거 데이터의 비중을 99.9퍼센트로 유지하고, 새 데이터는 0.1퍼센트만 반영하는 것이었지만 초기 시작 시점에는 과거 데이터( $v_0$ )가 0이므로 새로 들어온 기울기 제곱( $g_1^2$ )에 $0.001$ 이라는 극단적으로 작은 비율만 적용되어 $v_1$ 값이 0에 매우 가까운 작은 수로 편향된 출력이 나온다. <br> $m_1$ 에서도 마찬가지이다.
+
+Adam에서는 이 문제를 해결하기 위해 **Bias Correction**을 적용한다.
+
+### Bias Correction
+
+- First Moment
+$m_t$ 는 과거 gradient의 가중합이다. 
+
+$$
+m_t = (1-\beta_1) \sum_{i=1}^{t} \beta_1^{\,t-i}\, g_i
+$$
+
+기울기의 기댓값이 시간에 따라 크게 변하지 않는다고 가정하면 ($\mathbb{E}[g_i] \approx \mathbb{E}[g]$),
+
+$$
+\begin{aligned}
+\mathbb{E}[m_t] &\approx \mathbb{E}[g] \cdot (1-\beta_1) \sum_{i=1}^{t} \beta_1^{\,t-i} \\
+&= \mathbb{E}[g] \cdot (1-\beta_1) \cdot \frac{1-\beta_1^{\,t}}{1-\beta_1} \\
+&= \mathbb{E}[g] \cdot (1-\beta_1^{\,t})
+\end{aligned}
+$$
+
+따라서 $m_t$ 의 기댓값은 실제 평균보다 $(1-\beta_1^{\,t})$ 배 작다. $v_t$ 도 같은 방식으로 $(1-\beta_2^{\,t})$ 배 작다. 이 값으로 나누어 보정한다.
+
+$$
+\hat{m}_t = \frac{m_t}{1-\beta_1^{\,t}}, \qquad \hat{v}_t = \frac{v_t}{1-\beta_2^{\,t}}
+$$
+
+**초반에만 작용해야하는데 정말 그럴까?** 
+
+$t$ 가 커지면 $\beta^t \to 0$ 이 되어 보정 계수가 1에 가까워지므로, 보정은 학습 초반에만 작동하게 된다.
+
 
 ## 정리
 
 - **RProp**: gradient의 부호만 사용하고, weight마다 step size를 조절. full-batch 학습에 적합.
 - **RMSProp**: gradient 제곱의 지수 이동 평균으로 나누어, rprop의 아이디어를 mini-batch에서도 쓸 수 있게 만든 방법.
+- **Adam**: Momentum + RMSProp으로, Bias Correction을 적용한 방법.
+
+## 구현 및 실험 설계 
+
+### 구현
+
+```python
+class AdaGrad:
+    def __init__(self, lr = 0.01):
+        self.lr = lr
+        self.h = None
+
+    def update(self, params, grads):
+        if self.h is None:
+            self.h = {}
+            for key, val in params.items():
+                self.h[key] = np.zeros_like(val)
+
+        for key in params.keys():
+            self.h[key] += grads[key] * grads[key]
+            params[key] -= self.lr * grads[key] / (np.sqrt(self.h[key]) + 1e-7)
+```
+
+```python
+class RMSprop:
+    def __init__(self, lr=0.01, decay_rate=0.99):
+        self.lr = lr
+        self.decay_rate = decay_rate
+        self.h = None
+
+    def update(self, params, grads):
+        if self.h is None:
+            self.h = {}
+            for key, val in params.items():
+                self.h[key] = np.zeros_like(val)
+
+        for key in params.keys():
+            self.h[key] *= self.decay_rate
+            self.h[key] += (1 - self.decay_rate) * grads[key] * grads[key]
+            params[key] -= self.lr * grads[key] / (np.sqrt(self.h[key]) + 1e-7)
+```
+
+```python
+class Adam:
+
+    def __init__(self, lr=0.001, beta1=0.9, beta2=0.999):
+        self.lr = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.iter = 0
+        self.m = None
+        self.v = None
+
+    def update(self, params, grads):
+        if self.m is None:
+            self.m, self.v = {}, {}
+            for key, val in params.items():
+                self.m[key] = np.zeros_like(val)
+                self.v[key] = np.zeros_like(val)
+
+        self.iter += 1
+        lr_t  = self.lr * np.sqrt(1.0 - self.beta2**self.iter) / (1.0 - self.beta1**self.iter)
+
+        for key in params.keys():
+            self.m[key] += (1 - self.beta1) * (grads[key] - self.m[key])
+            self.v[key] += (1 - self.beta2) * (grads[key]**2 - self.v[key])
+
+            params[key] -= lr_t * self.m[key] / (np.sqrt(self.v[key]) + 1e-7)
+```
+
+```python
+class AdamW:
+
+    def __init__(self, lr=0.001, beta1=0.9, beta2=0.999, weight_decay=0.01):
+        self.lr = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.weight_decay = weight_decay
+        self.iter = 0
+        self.m = None
+        self.v = None
+
+    def update(self, params, grads):
+        if self.m is None:
+            self.m, self.v = {}, {}
+            for key, val in params.items():
+                self.m[key] = np.zeros_like(val)
+                self.v[key] = np.zeros_like(val)
+
+        self.iter += 1
+        lr_t = self.lr * np.sqrt(1.0 - self.beta2**self.iter) / (1.0 - self.beta1**self.iter)
+
+        for key in params.keys():
+            params[key] -= self.lr * self.weight_decay * params[key]
+
+            self.m[key] += (1 - self.beta1) * (grads[key] - self.m[key])
+            self.v[key] += (1 - self.beta2) * (grads[key]**2 - self.v[key])
+
+            params[key] -= lr_t * self.m[key] / (np.sqrt(self.v[key]) + 1e-7)
+```
+
+### 참고 논문: Empirical Performance Comparison of Optimization Algorithms for Machine Learning/Deep Learning (2024)
+
+### 실험 설계
+- 실험 A: 함수를 통한 성능 평가 (f1, f2 설정)
+$$
+f1(x,y) = x^2 + y^2 + 5\sin(x + y^2)
+$$
+
+$$
+f2(x,y) = x^2 + y^2 + 5\sin(x + 2y^2)
+$$
+
+objective function을 해당 함수로 설정한 이유는 local minima가 많기 때문이다. f2의 경우, y축 방향으로 압축하였으므로 f1보다 f2에서 y방향의 gradient에서는 2배 그리고 gradient^2에서는 4배 더 커졌다.
+
+즉 민감도를 확인할 수 있다.
+
+- 실험 B: CIFAR-10 데이터셋을 통한 성능 평가 
