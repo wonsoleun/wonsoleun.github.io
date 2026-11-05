@@ -305,29 +305,53 @@ Adam에서는 이 문제를 해결하기 위해 **Bias Correction**을 적용한
 
 ### - Bias Correction
 
-- First Moment
-
-$m_t$ 는 과거 gradient의 가중합이다. 
-
+- second moment
 $$
-m_t = (1-\beta_1) \sum_{i=1}^{t} \beta_1^{\,t-i}\, g_i
+v_t = (1-\beta_ 2) \sum_{i=1}^{t} \beta_ 2^{\,t-i}\, g_i^2
 $$
 
-기울기의 기댓값이 시간에 따라 크게 변하지 않는다고 가정하면 ($\mathbb{E}[g_i] \approx \mathbb{E}[g]$),
+양변에 기댓값을 취해서, $\mathbb{E}[v_t]$ 가 second moment $\mathbb{E}[g_t^2]$ 와 어떤 관계인지 확인해보자.
 
 $$
 \begin{aligned}
-\mathbb{E}[m_t] &\approx \mathbb{E}[g] \cdot (1-\beta_1) \sum_{i=1}^{t} \beta_1^{\,t-i} \\
-&= \mathbb{E}[g] \cdot (1-\beta_1) \cdot \frac{1-\beta_1^{\,t}}{1-\beta_1} \\
-&= \mathbb{E}[g] \cdot (1-\beta_1^{\,t})
+\mathbb{E}[v_t] &= \mathbb{E}\Big[(1-\beta_2) \sum_{i=1}^{t} \beta_ 2^{\,t-i}\, g_i^2\Big] \\
+&= \mathbb{E}[g_t^2] \cdot (1-\beta_ 2) \sum_{i=1}^{t} \beta_ 2^{\,t-i} + \zeta \\
+&= \mathbb{E}[g_t^2] \cdot (1-\beta_ 2^{\,t}) + \zeta
 \end{aligned}
 $$
 
-따라서 $m_t$ 의 기댓값은 실제 평균보다 $(1-\beta_1^{\,t})$ 배 작다. $v_t$ 도 같은 방식으로 $(1-\beta_2^{\,t})$ 배 작다. 이 값으로 나누어 보정한다.
+둘째 줄은 과거의 $g_i^2$ 를 모두 현재의 $g_t^2$ 로 바꿔 쓴 것으로 그 차이에서 생기는 오차를 $\zeta$ 라고 한다. <br>
+셋째 줄은 등비수열의 합이다. $(1-\beta_2)\sum_{k=0}^{t-1}\beta_2^k = 1-\beta_2^t$ <br>
+논문에 따르면 second moment가 시간에 따라 변하지 않으면(stationary 하면) $\zeta = 0$ 이다. 변하더라도 지수이동평균은 오래된 기울기에 아주 작은 가중치만 주기 때문에 $\zeta$ 는 작게 유지된다.
+
+따라서 남는 차이는 $(1-\beta_2^{\,t})$ 라는 배율뿐이다. 논문에서는 이 항이 0으로 초기화했기 때문에 생긴 것이라고 설명하고, 그래서 이 값으로 나눠서 보정한다.
 
 $$
 \hat{m}_t = \frac{m_t}{1-\beta_1^{\,t}}, \qquad \hat{v}_t = \frac{v_t}{1-\beta_2^{\,t}}
 $$
+
+(hat 표시가 잘 안나온다)
+<br>
+
+**직관: 가중치의 합을 1로 맞추는 것**
+
+$v_t$ 는 과거 기울기들의 가중평균인데, 가중치들의 합이 1이 아닙니다.
+
+$$
+\sum_{i=1}^{t} (1-\beta_ 2)\,\beta_ 2^{\,t-i} = 1-\beta_ 2^{\,t} < 1
+$$
+
+나머지 $\beta_ 2^{\,t}$ 만큼의 가중치는 초기값 $v_0 = 0$ 에 배정된다. 그래서 값이 0 쪽으로 끌려가는데, $(1-\beta_2^{\,t})$ 로 나누는 것은 실제 데이터에 준 가중치들만 다시 정규화해서 합을 1로 맞추는 것이다. 예를 들어 $t=1$ 이면 $\hat v_1 = g_1^2$ 이 되어, 첫 기울기를 그대로 추정값으로 쓰게 된다. <br>
+
+
+**실제로 효과가 있었나?** <br>
+
+- section 5
+: momentum을 붙인 RMSProp에는 bias corection이 없다. 그래서 $\beta_ 2$ 가 1에 가까우면 초반 step이 매우 커지고 발산할 수 있는데, 이는 CIFAR 실험에서 RMSprop이 첫 epoch에 무너진 것으로 확인 할 수 있었다.
+
+- section 6.4
+: VAE 실험에서 bias correction을 뺀 경우와 넣은 경우를 비교한다. $\beta_ 2$ 가 1에 가까울 때 bias correction이 없으면 학습이 불안정해지는 것을 볼 수 있다. 
+
 
 **초반에만 작용해야하는데 정말 그럴까?** 
 
@@ -340,6 +364,21 @@ w_t = w_{t-1} - \eta \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}
 $$
 
 <br>
+
+### Algorithm
+
+hyper parameter: $\alpha = 0.001$, $\beta_ 1 = 0.9$, $\beta_ 2 = 0.999$, $\epsilon = 10^{-8}$
+
+$$
+\begin{aligned}
+g_t = \nabla_\theta f_t(\theta_{t-1}) \\
+m_t = \beta_ 1 m_{t-1} + (1-\beta_ 1)\, g_t \\
+v_t = \beta_ 2 v_{t-1} + (1-\beta_ 2)\, g_t^2 \\
+\hat m_t = m_t / (1-\beta_ 1^t), \qquad \hat v_t = v_t / (1-\beta_ 2^t) \\
+\theta_t = \theta_{t-1} - \alpha \cdot \hat m_t / (\sqrt{\hat v_t} + \epsilon)
+\end{aligned}
+$$
+
 
 ---
 
