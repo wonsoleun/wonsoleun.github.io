@@ -310,11 +310,12 @@ $$
 v_t = (1-\beta_ 2) \sum_{i=1}^{t} \beta_ 2^{\,t-i}\, g_i^2
 $$
 
-$$v_t = \underbrace{\beta_ 2^{\,t}\, v_0}_{\text{초기값의 몫}} + \underbrace{(1-\beta_ 2)\sum_{i=1}^{t} \beta_ 2^{\,t-i}\, g_i^2}_{\text{실제 기울기들의 몫}}$$
 
 양변에 기댓값을 취해서, $\mathbb{E}[v_t]$ 가 second moment $\mathbb{E}[g_t^2]$ 와 어떤 관계인지 확인해보자. <br>
 여기서 기댓값을 취한다는 건, second moment가 일정하다 가정하는 것이다. <br> 
 $\mathbb{E}[g_i^2] = \mathbb{E}[g^2]$
+
+<br>
 
 $$
 \begin{aligned}
@@ -334,17 +335,31 @@ $$
 \hat{m}_t = \frac{m_t}{1-\beta_1^{\,t}}, \qquad \hat{v}_t = \frac{v_t}{1-\beta_2^{\,t}}
 $$
 
-#### 왜 $(1-\beta_2^{\,t})$ 가 0으로 초기화해서 생겼다는 걸까?
+### 왜 $(1-\beta_2^{\,t})$ 가 0으로 초기화해서 생겼다는 걸까?
 
-$$v_t = \beta_2 v_{t-1} + (1-\beta_2)\, g_t^2$$
+$$
+v_t = \beta_2 v_{t-1} + (1-\beta_2)\, g_t^2
+$$
+
+<br>
 
 $v_0$ 를 남긴 채 점화식을 풀면 다음과 같다. 
 
-$$v_t = \underbrace{\beta_2^{\,t}\, v_0}_{\text{초기값의 몫}} + \underbrace{(1-\beta_2)\sum_{i=1}^{t} \beta_2^{\,t-i}\, g_i^2}_{\text{실제 기울기들의 몫}}$$
+<br>
+
+$$
+v_t = \underbrace{\beta_2^{\,t}\, v_0}_{\text{초기값의 몫}} + \underbrace{(1-\beta_2)\sum_{i=1}^{t} \beta_2^{\,t-i}\, g_i^2}_{\text{실제 기울기들의 몫}}
+$$
+
+<br>
 
 여기서 기댓값을 취하면, 
 
-$$\mathbb{E}[v_t] = \beta_2^{\,t}\, v_0 + (1-\beta_2^{\,t})\,\mathbb{E}[g^2]$$
+<br>
+
+$$
+\mathbb{E}[v_t] = \beta_2^{\,t}\, v_0 + (1-\beta_2^{\,t})\,\mathbb{E}[g^2]
+$$
 
 | 초기값 | $\mathbb{E}[v_t]$ | 치우침 |
 | --- | --- | --- |
@@ -353,9 +368,11 @@ $$\mathbb{E}[v_t] = \beta_2^{\,t}\, v_0 + (1-\beta_2^{\,t})\,\mathbb{E}[g^2]$$
 
 <br>
 
-따라서 위와 같은 추론이 가능했다.
+따라서 $(1-\beta_2^{\,t})$ 가 0으로 초기화해서 생겼다고 추론할 수 있다.
 
-#### 실제로 효과가 있었나?
+<br>
+
+**실제로 bias correction이 효과 있었나?**
 
 - section 5
 : momentum을 붙인 RMSProp에는 bias corection이 없다. 그래서 $\beta_ 2$ 가 1에 가까우면 초반 step이 매우 커지고 발산할 수 있는데, 이는 CIFAR 실험에서 RMSprop이 첫 epoch에 무너진 것으로 확인 할 수 있었다.
