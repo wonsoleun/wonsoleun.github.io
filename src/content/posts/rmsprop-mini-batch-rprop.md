@@ -31,13 +31,13 @@ $$
 step size = 해당 weight를 한 번 업데이트할 때 이동하는 크기 <br>
 RProp은 **이전 gradient와 현재 gradient의 부호를 비교**해서 step size 조절한다.
 
-#### Case 1. 이전 gradient 부호 = 현재 gradient 부호
+**Case 1. 이전 gradient 부호 = 현재 gradient 부호**
 
 weight를 계속 같은 방향으로 움직이라는 의미로, 해당 weight의 step size를 증가시킨다. (예: 1.2배)
 
 <br>
 
-#### Case 2. 이전 gradient 부호 ≠ 현재 gradient 부호
+**Case 2. 이전 gradient 부호 ≠ 현재 gradient 부호**
 
 Optimal point를 향해 이동하다가 너무 크게 움직여서 Optimal point를 지나쳐 반대편으로 넘어갔을 가능성이 있다는 의미로 해석할 수 있다. 해당 weight의 step size를 감소시킨다. (예: 0.5배)
 
@@ -75,9 +75,9 @@ $g_t$: 현재 mini-batch에서 계산한 gradient
 $$
 \begin{aligned}
 \Delta w
-&=-\eta\sum_{t=1}^{10}g_t\
-&=-\eta[9(0.1)+(-0.9)]\
-&=0
+ = -\eta\sum_{t=1}^{10}g_t\
+ = -\eta[9(0.1)+(-0.9)]\
+ = 0
 \end{aligned}
 $$
 
@@ -130,10 +130,10 @@ $\text{MeanSquare}(w,t)$ 은 과거 정보 90%와 현재 gradient 제곱의 10%�
 
 $$
 \begin{aligned}
-MeanSquare_t
-=&\ 0.1g_t^2\
-&+0.09g_{t-1}^2\
-&+0.081g_{t-2}^2+\cdots
+\text{MeanSquare}(w,t)
+= \ 0.1g_t^2\
+ + 0.09g_{t-1}^2\
+ + 0.081g_{t-2}^2 + \cdots
 \end{aligned}
 $$
 
@@ -230,13 +230,16 @@ RMSProp은 EMA를 사용해 과거 정보의 영향을 점점 줄이기 때문�
 ### - 추가 학습 - Adam을 이해하기 위해
 
 - Second Uncentered Moment = $g^2$
+
 기울기의 제곱($g^2$) = Second Uncentered Moment <br>
 딥러닝의 최적화 과정에서 gradient의 평균은 보통 0에 수렴한다고 가정하기 때문에, 기울기의 제곱은 곧 기울기의 분산(Variance)을 의미하게 된다. 즉, '방향(+, -)'은 무시하고 '최근 기울기가 얼마나 크게 요동치고 있는가(변동성, Magnitude)'를 측정하는 지표를 의미한다.
 
 - EWMA (Exponentially Weighted Moving Average) = $E[g^2]$
+
 수식에서 쓰인 $0.9$와 $0.1$의 가중치 합을 통해, 최근 데이터에는 큰 가중치(0.1)를 주고 과거 데이터에는 지수적으로 감쇠하는 가중치(e.g. $0.1 \times 0.9$, $0.1 \times 0.9^2$ ...)를 곱해 더한다. 이를 공식 용어로 지수 가중 이동 평균(EWMA)이라고 부르며, 수식에서는 기울기 제곱에 대한 기댓값 $E[g^2]$를 추정하는 과정으로 이해하면 된다.
 
 - RMS = $\sqrt{E[g^2]}$
+
 앞서 구한 EWMA 값에 최종적으로 제곱근(루트, $\sqrt{}$)을 씌운다.
 어떤 값들을 제곱해서 평균을 낸 뒤 다시 루트를 씌우는 것을 RMS(Root Mean Square)라고 부르며, 이는 +와 -를 오가는 데이터의 Effective Magnitude를 나타낼 때 사용한다.
 
@@ -315,7 +318,7 @@ $$
 여기서 기댓값을 취한다는 건, second moment가 일정하다 가정하는 것이다. <br> 
 $\mathbb{E}[g_i^2] = \mathbb{E}[g^2]$
 
-<br>
+
 
 $$
 \begin{aligned}
@@ -355,7 +358,6 @@ $$
 
 여기서 기댓값을 취하면, 
 
-<br>
 
 $$
 \mathbb{E}[v_t] = \beta_2^{\,t}\, v_0 + (1-\beta_2^{\,t})\,\mathbb{E}[g^2]
@@ -381,7 +383,7 @@ $$
 : VAE 실험에서 bias correction을 뺀 경우와 넣은 경우를 비교한다. $\beta_ 2$ 가 1에 가까울 때 bias correction이 없으면 학습이 불안정해지는 것을 볼 수 있다. 
 
 
-#### 초반에만 작용해야하는데 정말 그런가? 
+**초반에만 작용해야하는데 정말 그런가?** 
 
 $t$ 가 커지면 $\beta^t \to 0$ 이 되어 보정 계수가 1에 가까워지므로, 보정은 학습 초반에만 작동하게 된다.
 
@@ -412,13 +414,15 @@ $$
 
 ## 7. AdamW
 
-### - Adam의 한계
+---
 
 ## 정리
 
 - **RProp**: gradient의 부호만 사용하고, weight마다 step size를 조절. full-batch 학습에 적합.
 - **RMSProp**: gradient 제곱의 지수 이동 평균으로 나누어, rprop의 아이디어를 mini-batch에서도 쓸 수 있게 만든 방법.
 - **Adam**: Momentum + RMSProp으로, Bias Correction을 적용한 방법.
+
+---
 
 ## 구현 및 실험 설계 
 
