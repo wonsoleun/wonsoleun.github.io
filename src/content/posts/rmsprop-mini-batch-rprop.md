@@ -31,13 +31,13 @@ $$
 step size = 해당 weight를 한 번 업데이트할 때 이동하는 크기 <br>
 RProp은 **이전 gradient와 현재 gradient의 부호를 비교**해서 step size 조절한다.
 
-**Case 1. 이전 gradient 부호 = 현재 gradient 부호**
+#### Case 1. 이전 gradient 부호 = 현재 gradient 부호
 
 weight를 계속 같은 방향으로 움직이라는 의미로, 해당 weight의 step size를 증가시킨다. (예: 1.2배)
 
 <br>
 
-**Case 2. 이전 gradient 부호 ≠ 현재 gradient 부호**
+#### Case 2. 이전 gradient 부호 ≠ 현재 gradient 부호
 
 Optimal point를 향해 이동하다가 너무 크게 움직여서 Optimal point를 지나쳐 반대편으로 넘어갔을 가능성이 있다는 의미로 해석할 수 있다. 해당 weight의 step size를 감소시킨다. (예: 0.5배)
 
@@ -310,41 +310,52 @@ $$
 v_t = (1-\beta_ 2) \sum_{i=1}^{t} \beta_ 2^{\,t-i}\, g_i^2
 $$
 
-양변에 기댓값을 취해서, $\mathbb{E}[v_t]$ 가 second moment $\mathbb{E}[g_t^2]$ 와 어떤 관계인지 확인해보자.
+$$v_t = \underbrace{\beta_ 2^{\,t}\, v_0}_{\text{초기값의 몫}} + \underbrace{(1-\beta_ 2)\sum_{i=1}^{t} \beta_ 2^{\,t-i}\, g_i^2}_{\text{실제 기울기들의 몫}}$$
+
+양변에 기댓값을 취해서, $\mathbb{E}[v_t]$ 가 second moment $\mathbb{E}[g_t^2]$ 와 어떤 관계인지 확인해보자. <br>
+여기서 기댓값을 취한다는 건, second moment가 일정하다 가정하는 것이다. <br> 
+$\mathbb{E}[g_i^2] = \mathbb{E}[g^2]$
 
 $$
 \begin{aligned}
-\mathbb{E}[v_t] &= \mathbb{E}\Big[(1-\beta_2) \sum_{i=1}^{t} \beta_ 2^{\,t-i}\, g_i^2\Big] \\
-&= \mathbb{E}[g_t^2] \cdot (1-\beta_ 2) \sum_{i=1}^{t} \beta_ 2^{\,t-i} + \zeta \\
-&= \mathbb{E}[g_t^2] \cdot (1-\beta_ 2^{\,t}) + \zeta
+\mathbb{E}[v_t] &= \mathbb{E}\Big[(1-\beta_2) \sum_{i=1}^{t} \beta_2^{\,t-i}\, g_i^2\Big] \\
+&= \mathbb{E}[g_t^2] \cdot (1-\beta_2) \sum_{i=1}^{t} \beta_2^{\,t-i} + \zeta \\
+&= \mathbb{E}[g_t^2] \cdot (1-\beta_2^{\,t}) + \zeta
 \end{aligned}
 $$
 
 둘째 줄은 과거의 $g_i^2$ 를 모두 현재의 $g_t^2$ 로 바꿔 쓴 것으로 그 차이에서 생기는 오차를 $\zeta$ 라고 한다. <br>
 셋째 줄은 등비수열의 합이다. $(1-\beta_2)\sum_{k=0}^{t-1}\beta_2^k = 1-\beta_2^t$ <br>
-논문에 따르면 second moment가 시간에 따라 변하지 않으면(stationary 하면) $\zeta = 0$ 이다. 변하더라도 지수이동평균은 오래된 기울기에 아주 작은 가중치만 주기 때문에 $\zeta$ 는 작게 유지된다.
+<br>
 
-따라서 남는 차이는 $(1-\beta_2^{\,t})$ 라는 배율뿐이다. 논문에서는 이 항이 0으로 초기화했기 때문에 생긴 것이라고 설명하고, 그래서 이 값으로 나눠서 보정한다.
+따라서 $(1-\beta_2^{\,t})$ 라는 배율 차이가 있다는 걸 알 수 있다. 논문에서는 이 항이 0으로 초기화했기 때문에 생긴 것이라고 설명하고, 그래서 이 값으로 나눠서 보정한다.
 
 $$
 \hat{m}_t = \frac{m_t}{1-\beta_1^{\,t}}, \qquad \hat{v}_t = \frac{v_t}{1-\beta_2^{\,t}}
 $$
 
-(hat 표시가 잘 안나온다)
+#### 왜 $(1-\beta_2^{\,t})$ 가 0으로 초기화해서 생겼다는 걸까?
+
+$$v_t = \beta_2 v_{t-1} + (1-\beta_2)\, g_t^2$$
+
+$v_0$ 를 남긴 채 점화식을 풀면 다음과 같다. 
+
+$$v_t = \underbrace{\beta_2^{\,t}\, v_0}_{\text{초기값의 몫}} + \underbrace{(1-\beta_2)\sum_{i=1}^{t} \beta_2^{\,t-i}\, g_i^2}_{\text{실제 기울기들의 몫}}$$
+
+여기서 기댓값을 취하면, 
+
+$$\mathbb{E}[v_t] = \beta_2^{\,t}\, v_0 + (1-\beta_2^{\,t})\,\mathbb{E}[g^2]$$
+
+| 초기값 | $\mathbb{E}[v_t]$ | 치우침 |
+| --- | --- | --- |
+| $v_0 = \mathbb{E}[g^2]$ | $\mathbb{E}[g^2]$ | 없음 |
+| $v_0 = 0$ | $(1-\beta_2^{\,t})\,\mathbb{E}[g^2]$ | $(1-\beta_2^{\,t})$ 배율 생김 |
+
 <br>
 
-**직관: 가중치의 합을 1로 맞추는 것**
+따라서 위와 같은 추론이 가능했다.
 
-$v_t$ 는 과거 기울기들의 가중평균인데, 가중치들의 합이 1이 아닙니다.
-
-$$
-\sum_{i=1}^{t} (1-\beta_ 2)\,\beta_ 2^{\,t-i} = 1-\beta_ 2^{\,t} < 1
-$$
-
-나머지 $\beta_ 2^{\,t}$ 만큼의 가중치는 초기값 $v_0 = 0$ 에 배정된다. 그래서 값이 0 쪽으로 끌려가는데, $(1-\beta_2^{\,t})$ 로 나누는 것은 실제 데이터에 준 가중치들만 다시 정규화해서 합을 1로 맞추는 것이다. 예를 들어 $t=1$ 이면 $\hat v_1 = g_1^2$ 이 되어, 첫 기울기를 그대로 추정값으로 쓰게 된다. <br>
-
-
-**실제로 효과가 있었나?** <br>
+#### 실제로 효과가 있었나?
 
 - section 5
 : momentum을 붙인 RMSProp에는 bias corection이 없다. 그래서 $\beta_ 2$ 가 1에 가까우면 초반 step이 매우 커지고 발산할 수 있는데, 이는 CIFAR 실험에서 RMSprop이 첫 epoch에 무너진 것으로 확인 할 수 있었다.
@@ -353,7 +364,7 @@ $$
 : VAE 실험에서 bias correction을 뺀 경우와 넣은 경우를 비교한다. $\beta_ 2$ 가 1에 가까울 때 bias correction이 없으면 학습이 불안정해지는 것을 볼 수 있다. 
 
 
-**초반에만 작용해야하는데 정말 그럴까?** 
+#### 초반에만 작용해야하는데 정말 그런가? 
 
 $t$ 가 커지면 $\beta^t \to 0$ 이 되어 보정 계수가 1에 가까워지므로, 보정은 학습 초반에만 작동하게 된다.
 
