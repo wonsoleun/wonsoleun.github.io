@@ -12,7 +12,7 @@ tags:
 # Sea-Ya 
 
 
-## Baseline
+## -  Baseline
 
 참고 논문: Han et al. (2026), "A RAG-based Q&A system for ship regulations applying domain adaptation
 
@@ -26,17 +26,20 @@ DNV PDF ─▶ Docling JSON(수식 LaTeX·표 구조) ─▶ ① 계층형 DB �
 
 ---
 
-## 앞으로 고민해야할 과정 (계속 추가 예정)
+## - 앞으로 고민해야할 과정 (계속 추가 예정)
 
-1. 수식
-2. 이미지
-3. bbox 같은 줄
+1. 수식 
+2. 이미지 출력
+3. bbox 같은 줄 판단
+4. 후보 k개를 늘어놓고 사용자가 고르게 하지 말고, 정답 조항과 그 근거를 확정적으로 할 것
+
+-> 해당 피드백 부분은 아직 파싱 단계 정확도가 좋지 않아서 보류
 
 <br>
 
 ---
 
-## Docling - formula
+## - Docling - formula
 
 <br>
 
@@ -91,7 +94,7 @@ Docling 처리 순서: Layout 검출 → **Layout 후처리** → 읽기 순서 
 
 <br>
 
-### - 수식 자체가 빠지는 문제
+### 수식 자체가 빠지는 문제
 
 | 단계 | 자료 | 역할 |
 | --- | --- | --- |
@@ -103,6 +106,24 @@ Docling 처리 순서: Layout 검출 → **Layout 후처리** → 읽기 순서 
 - get_bitmap_rects()는 래스터 이미지만 돌려줘서 벡터 수식에서는 빈 목록 → 실제로 영역을 넓힌 건 잉크 연결 요소
 - 선행 연구 파이프라인은 느려서(페이지당 약 70초) 도구 대신 아이디어만 가져옴
 
+**참고: get_bitmap_rects() vs 잉크 연결 요소** <br>
+- PDF 안 그림은 두 방식으로 들어간다
+
+  - 래스터 이미지: 점(픽셀)으로 된 그림 파일을 통째로 붙인 것 (JPG, PNG처럼)
+  - 벡터 path: 그림 파일 없이 "선을 긋고 곡선을 그려라" 같은 그리기 명령으로 만든 모양
+
+- DNV 수식은 벡터 path였다
+
+- get_bitmap_rects(): 페이지에 붙은 **그림 파일** 위치를 알려주는 함수 
+
+ → 수식은 그림 파일이 아니라서 빈 목록이 나옴 (수식이 이미지라는 처음 가정이 틀림)
+
+- 잉크 연결 요소: 페이지를 이미지로 그린 뒤, 서로 붙어 있는 검은 점 덩어리를 찾는 방법
+
+ → 글자, 기호, 분수 막대가 각각 덩어리 하나 <br>
+ → 꼬리 텍스트와 같은 줄의 덩어리를 합치면 수식 전체 영역이 됨
+
+<br>
 
 *참고 논문 : Shah, A.K., Dey, A., Zanibbi, R. (2021). A Math Formula Extraction and Evaluation Framework for PDF Documents. ICDAR 2021, LNCS 12822, pp. 19–34.*
 
@@ -141,5 +162,5 @@ https://github.com/docling-project/docling/blob/main/docling/models/base_model.p
 
 ---
 
-### - box 두 개가 같은 줄에 있는지 판단
+## - bbox 같은 줄 판단
 
