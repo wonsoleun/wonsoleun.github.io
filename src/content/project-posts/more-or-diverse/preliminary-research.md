@@ -1,7 +1,9 @@
 ---
 title: "Preliminary Research"
 order: 1
+date: "2026-11-13"
 description: "Reviewing related research and academic papers."
+author: "Soleun Won"
 ---
 
 ## 선행 연구

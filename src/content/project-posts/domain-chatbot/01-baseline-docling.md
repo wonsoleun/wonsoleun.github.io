@@ -2,11 +2,8 @@
 title: "Baseline ~ Docling formula"
 order: 1
 date: "2026-11-12"
-description: "Baseline 설정, Docling formula 문제 분석, bbox 같은 줄 판단"
-tags:
-  - "RAG"
-  - "Programming"
-  - "Python"
+description: "Docling"
+author: "Soleun Won"
 ---
 
 # Sea-Ya 
