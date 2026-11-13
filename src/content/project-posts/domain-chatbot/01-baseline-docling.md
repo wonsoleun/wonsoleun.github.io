@@ -1,8 +1,8 @@
 ---
-title: "SEA-YA: Domain Specific Chatbot Project"
+title: "Baseline ~ Docling formula"
+order: 1
 date: "2026-11-12"
-description: "Development log of problems found, root-cause analyses, and fixes for the DNV regulation RAG chatbot, in chronological order"
-author: "Soleun Won"
+description: "Baseline 설정, Docling formula 문제 분석, bbox 같은 줄 판단"
 tags:
   - "RAG"
   - "Programming"
@@ -41,60 +41,25 @@ DNV PDF ─▶ Docling JSON(수식 LaTeX·표 구조) ─▶ ① 계층형 DB �
 
 ## - Docling - formula
 
-<br>
 
-### 문제: 수식이 들어간 조항을 검색하면 조항과 변수 정의는 나오지만, 수식 자체만 빠져서 답변에 보이지 않음
+### Docling에 대해 이해해보자
 
-<br>
-
-### 문제 파악
-
-의심 지점을 앞에서부터 하나씩 지워 나간 결과, PDF 추출 단계에서 생긴 문제라는 걸 알 수 있었다. <br>
-1. 검색 확인: 정답 조항(5.1)을 제대로 가져왔다
-
- → 검색 문제 아님
-<br>
-
-2. chunking 확인: 변수 정의가 같은 chunk에 있다
-
- → 수식과 where 절이 갈라진 문제 아님
-<br>
-
-3. PDF 원본 확인: 수식을 드래그하면 선택이 안 된다
-
- → 수식에 텍스트 레이어가 없음. 확인해 보니 이미지가 아니라 **벡터 path(선·곡선 도형)**로 그려져 있음
-<br>
-
-4. chunks.jsonl 확인: 남은 조각이 $$ R \text{for condition} A . $$로 감싸져 있다
-
- → Docling이 formula로 잡고 LaTeX 변환도 했지만, 꼬리 텍스트만 변환함
-<br>
-
-5. 같은 수식 블록의 나머지 조각(WSD condition B, PSF A·B 식)이 5.3 본문(p.13, chunk 2460/2461)에 들어가 있다
-
- → 원래 5.1에 있어야 하는데, 페이지가 넘어가면서 다른 조항으로 들어감
+*Livathinos, N., Auer, C., Staar, P.W.J., et al. (2025). Advanced Layout Analysis Models for Docling. arXiv:2509.11720*
+<br> 
+→ Docling 후처리는 레이아웃 박스를 PDF 텍스트 셀에 맞게 조이도록 설계됨
 
 <br>
 
 **핵심 문제**
 1. 수식 자체가 빠지는 것
 2. 수식과 꼬리 텍스트가 같은 줄인지 판정하는 방법 = bbox 두 개가 같은 줄에 있는지 판단하기
-3. 페이지가 넘어가면 수식 조각이 다른 조항으로 분리되는 것
+3. 페이지가 넘어가면 수식 조각이 다른 조항으로 분리되는 것 
 
 <br>
 
-### - 원인
-Docling 처리 순서: Layout 검출 → **Layout 후처리** → 읽기 순서 → **수식 변환(CodeFormula)**
-- Layout 검출: 페이지 이미지를 보고 수식 줄 전체를 formula로 잘 잡음
-- Layout 후처리: 영역의 bbox를 그 안의 PDF 텍스트 조각에 맞춰 다시 그림
-<br> → 벡터 수식 본체에는 텍스트가 없으니, 영역이 꼬리 텍스트("R for condition A") 크기로 줄어듦
-<br> → 영역 안에 텍스트가 하나도 없으면 원래 영역을 유지함 (p.66은 이 경우라 영역이 정상)
-- 수식 변환: 줄어든 영역만 잘라서 LaTeX로 바꿈 → 꼬리만 변환됨
-- 여백 설정(expansion_factor)은 bbox 비례라 작은 영역을 넓혀도 본체에 닿지 않음 → 설정으로는 해결 불가
+---
 
-<br>
-
-### - 선행 연구
+### - formula 문제 해결을 위한 선행 연구 
 
 **참고 논문**
 
@@ -152,7 +117,7 @@ Docling 처리 순서: Layout 검출 → **Layout 후처리** → 읽기 순서 
 
 <br>
 
-**왜 이게 문제였던걸까?**
+**원인 분석**
 
 1. Docling은 수식의 BBox를 내부 텍스트 셀의 크기에 맞춰 줄인다. (`_adjust_cluster_bboxes`).
 2. 근데 수식 자체에는 텍스트 셀이 없으므로 BBox가 꼬리 텍스트 영역만 남게 된 것.
@@ -160,15 +125,7 @@ Docling 처리 순서: Layout 검출 → **Layout 후처리** → 읽기 순서 
 
 <br>
 
-**해결 구조** (Docling 앞 단계와 parse.py는 그대로, prepare_element 직전에만 보정)
-1. 후보 모으기: 줄어든 bbox와 같은 줄의 잉크 덩어리, PDF 이미지 객체
-2. 걸러내기: 큰 그래픽, 위아래 다른 줄 제외
-3. 합치기: 후보 + 꼬리 텍스트를 하나의 영역으로
-4. 자르고 변환: 넓힌 영역으로 잘라 기존 CodeFormula에 넣기
-
-<br>
-
-**결과** (Part 3의 p.12·13·66, 보정 끄고/켜고 비교)
+**보정 후 결과** (Part 3의 p.12·13·66, 보정 끄고/켜고 비교)
 
 | 페이지 | 보정 전 | 보정 후 |
 | --- | --- | --- |
@@ -190,6 +147,32 @@ https://docling-project.github.io/docling/_generated/examples/develop_formula_un
 https://github.com/docling-project/docling/blob/main/docling/models/base_model.py
 
 <br>
+
+---
+
+### - 문단이 넘어가면 읽기 순서에서 쪼개지는 문제 해결을 위한 선행 연구 
+
+- 이 문제에 대한 보고된 한계 
+*Auer, C., Lysak, M., Staar, P.W.J., et al. (2024). Docling Technical Report. arXiv:2408.09869* 에 따르면,
+<br> → 원인 근거: 레이아웃 예측을 PDF 텍스트 토큰과 교차시켜 요소를 만드는 구조
+<br> → 페이지 경계 단서: 단 끝에서 넘어가는 문단이 읽기 순서에서 쪼개지고 표가 끼어들 수 있음 
+
+<br>
+
+**해결방향**
+
+1. 페이지를 넘는 구조 분석 (학습 기반)
+Microsoft 연구팀(arXiv:2503.15893)은 분석을 페이지 단위와 문서 단위 두 단계로 나눈다. 문서 단위에서는 목차 추출, 계층 목록 추출, 페이지를 넘는 표 묶기, 페이지를 넘는 문단 묶기를 처리한다. DOSA(AACL 2026)도 같은 문제를 다루며, 문서를 청크 단위로 나눠 멀티모달 모델이 요소 사이의 계층, 순서 관계를 예측한다.
+<br> → 범용적이지만 관계 라벨이 있는 학습 데이터가 필요하다
+
+
+2. 기존 파서 출력 뒤에 규칙으로 보정하는 방향 (사후 보정)
+Docling은 그대로 두고, 출력된 결과를 문서 단위로 다시 이어 붙인다. MinerU-Popo(arXiv:2605.24973)처럼 파서를 바꾸지 않고 뒤에서 고치는 방식이다.
+<br> → DNV는 조항 번호 체계(Pt > Ch > Sec > [x.y.z])가 명확해서 학습 없이 규칙으로 판단할 근거가 많다
+<br> → e.g. 페이지 맨 위에서 첫 조항 제목이 나오기 전의 요소는 이전 페이지 마지막 조항에 이어 붙인다
+
+
+- 범용성은 1번이 더 좋지만, DNV처럼 계층이 확실한 문서는 2번으로도 충분할 것으로 판단됌 => 2번으로 결정
 
 ---
 

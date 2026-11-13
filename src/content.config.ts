@@ -74,6 +74,19 @@ const projects = defineCollection({
     }),
 });
 
+// 프로젝트별 하위 글 (예: src/content/project-posts/more-or-diverse/week1.md)
+// 폴더 이름 = 프로젝트 md 파일 이름. 폴더에 md를 넣으면 해당 프로젝트 글목록에 자동 추가됨.
+const projectPosts = defineCollection({
+    loader: glob({ pattern: "**/*.md", base: "./src/content/project-posts" }),
+    schema: z.object({
+        title: z.string(),
+        order: z.number().optional(),
+        date: z.string().optional(),
+        description: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+    }),
+});
+
 const cv = defineCollection({
     loader: glob({ pattern: "cv.md", base: "./src/content" }),
     schema: z.object({
@@ -101,6 +114,7 @@ export const collections = {
     'posts': posts,
     'bio': bio,
     'projects': projects,
+    'projectPosts': projectPosts,
     'cv': cv,
     'teaching': teaching,
 };

@@ -1,7 +1,12 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, getEntry, render } from "astro:content";
 import BaseDetail from "../../layouts/BaseDetail.astro";
-import { PAGES } from "../../config";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import BackLink from "../../components/ui/BackLink.astro";
+import BaseItemCard from "../../components/ui/BaseItemCard.astro";
+import Tag from "../../components/ui/Tag.astro";
+import { getListingItem } from "../../utils/adapters";
+import { PAGES, SITE } from "../../config";
 
 if (PAGES.projects.isActive === false) {
     return Astro.redirect("/404");
@@ -17,6 +22,60 @@ export async function getStaticPaths() {
 }
 
 const { id } = Astro.params;
+
+// 이 프로젝트 폴더(src/content/project-posts/<id>/)에 들어있는 하위 글들
+const subPosts = (await getCollection("projectPosts"))
+    .filter((p: any) => p.id.startsWith(`${id}/`))
+    .sort((a: any, b: any) => {
+        const oa = a.data.order ?? Number.MAX_SAFE_INTEGER;
+        const ob = b.data.order ?? Number.MAX_SAFE_INTEGER;
+        if (oa !== ob) return oa - ob;
+        const da = a.data.date ? new Date(a.data.date).getTime() : 0;
+        const db = b.data.date ? new Date(b.data.date).getTime() : 0;
+        if (da !== db) return da - db;
+        return a.id.localeCompare(b.id, undefined, { numeric: true });
+    });
+
+const hasSubPosts = subPosts.length > 0;
+const project = hasSubPosts ? ((await getEntry("projects", id as string)) as any) : null;
+const Content = project && project.body?.trim() ? (await render(project)).Content : null;
 ---
 
-<BaseDetail collection="projects" id={id} />
+{hasSubPosts && project ? (
+    <BaseLayout
+        title={project.data.title}
+        description={project.data.description || SITE.desc}
+        ogImage={project.data.image || SITE.ogImage}
+    >
+        <div class="flex justify-between items-center mb-4">
+            <BackLink href="/projects" label="projects" />
+        </div>
+
+        <header class="page-header">
+            <h1 class="page-title">{project.data.title}</h1>
+            {project.data.description && <p class="page-subtitle">{project.data.description}</p>}
+            {project.data.tags && project.data.tags.length > 0 && (
+                <div class="flex gap-2 flex-wrap mt-3">
+                    {project.data.tags.map((tag: string) => <Tag name={tag} size="sm" />)}
+                </div>
+            )}
+        </header>
+
+        {Content && (
+            <div class="prose mb-8">
+                <Content />
+            </div>
+        )}
+
+        <h2 class="page-title mb-4">글목록</h2>
+        <section class="item-list">
+            {subPosts.map((post: any) => {
+                const item = getListingItem(post);
+                const slug = post.id.slice(id!.length + 1);
+                return <BaseItemCard {...item} href={`/projects/${id}/${slug}`} />;
+            })}
+        </section>
+    </BaseLayout>
+) : (
+    <BaseDetail collection="projects" id={id as string} />
+)}

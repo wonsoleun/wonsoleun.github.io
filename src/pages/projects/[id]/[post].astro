@@ -1,0 +1,30 @@
+---
+import { getCollection, getEntry } from "astro:content";
+import BaseDetail from "../../../layouts/BaseDetail.astro";
+import { PAGES } from "../../../config";
+
+if (PAGES.projects.isActive === false) {
+    return Astro.redirect("/404");
+}
+
+export async function getStaticPaths() {
+    if (PAGES.projects.isActive === false) return [];
+    const posts = await getCollection("projectPosts");
+    return posts
+        .filter((p: any) => p.id.includes("/"))
+        .map((p: any) => {
+            const idx = p.id.indexOf("/");
+            return { params: { id: p.id.slice(0, idx), post: p.id.slice(idx + 1) } };
+        });
+}
+
+const { id, post } = Astro.params;
+const project = (await getEntry("projects", id as string)) as any;
+---
+
+<BaseDetail
+    collection="projectPosts"
+    id={`${id}/${post}`}
+    backHref={`/projects/${id}`}
+    backLabel={project?.data.title ?? "project"}
+/>
