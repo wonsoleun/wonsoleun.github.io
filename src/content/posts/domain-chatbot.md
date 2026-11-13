@@ -94,38 +94,69 @@ Docling 처리 순서: Layout 검출 → **Layout 후처리** → 읽기 순서 
 
 <br>
 
-### 수식 자체가 빠지는 문제
+### - 선행 연구
 
-| 단계 | 자료 | 역할 |
-| --- | --- | --- |
-| 원인 위치 | Docling 저장소 (layout_postprocessor.py) | bbox가 텍스트 크기로 줄어드는 지점 확인 |
-| 고칠 위치 | Formula enrichment 예제 + base_model.py | 수식 처리 단계를 붙이고, 이미지를 자르는 prepare_element()를 바꾸는 구조 |
-| 넓힐 기준 | Shah et al.(2021) + 잉크(연결 요소) | 영역 경계를 텍스트가 아닌 잉크로 정하는 아이디어 |
-| 검증 | Figure export 글 (get_image()) | 고치기 전과 후에 잘린 영역을 그림으로 비교 |
+**참고 논문**
 
-- get_bitmap_rects()는 래스터 이미지만 돌려줘서 벡터 수식에서는 빈 목록 → 실제로 영역을 넓힌 건 잉크 연결 요소
-- 선행 연구 파이프라인은 느려서(페이지당 약 70초) 도구 대신 아이디어만 가져옴
+*Shah, A.K., Dey, A., Zanibbi, R. (2021). A Math Formula Extraction and Evaluation Framework for PDF Documents. ICDAR 2021, LNCS 12822, pp. 19–34.*
+<br>
 
-**참고: get_bitmap_rects() vs 잉크 연결 요소** <br>
-- PDF 안 그림은 두 방식으로 들어간다
+→ 설계 원리: 수식 영역 경계는 페이지 이미지(잉크)로 정하고, PDF 텍스트는 그 안에 배정한다
 
-  - 래스터 이미지: 점(픽셀)으로 된 그림 파일을 통째로 붙인 것 (JPG, PNG처럼)
-  - 벡터 path: 그림 파일 없이 "선을 긋고 곡선을 그려라" 같은 그리기 명령으로 만든 모양
+*Mali, P., Kukkadapu, P., Mahdavi, M., Zanibbi, R. (2020). ScanSSD: Scanning Single Shot Detector for Mathematical Formulas in PDF Document Images. arXiv:2003.08005*
+<br> 
 
-- DNV 수식은 벡터 path였다
+→ 구체적 기법: 검출 박스를 닿아 있는 잉크 연결 요소에 맞춰 넓히거나 줄인다
 
-- get_bitmap_rects(): 페이지에 붙은 **그림 파일** 위치를 알려주는 함수 
-
- → 수식은 그림 파일이 아니라서 빈 목록이 나옴 (수식이 이미지라는 처음 가정이 틀림)
-
-- 잉크 연결 요소: 페이지를 이미지로 그린 뒤, 서로 붙어 있는 검은 점 덩어리를 찾는 방법
-
- → 글자, 기호, 분수 막대가 각각 덩어리 하나 <br>
- → 꼬리 텍스트와 같은 줄의 덩어리를 합치면 수식 전체 영역이 됨
+- 적용 방향: 수식 검출은 Docling에 맡기고, 줄어든 formula bbox와 같은 줄의 잉크 덩어리만 모아 영역을 넓힘
 
 <br>
 
-*참고 논문 : Shah, A.K., Dey, A., Zanibbi, R. (2021). A Math Formula Extraction and Evaluation Framework for PDF Documents. ICDAR 2021, LNCS 12822, pp. 19–34.*
+### 추가 설명
+
+**요약**
+
+- `get_bitmap_rects()`는 이미지 객체만 찾아내는 함수
+-> 이미지는 없고 수식만 있는 페이지에서 `get_bitmap_rects()` 비어 있음. <br>
+-> 수식은 보이는데, 이미지 객체는 하나도 없다 <br>
+-> 수식은 이미지가 아니라 다른 방식(벡터 path)으로 그려져 있구나 <br>
+
+- 수식을 찾는 다른 방법으로, `_ink_components` 사용하자.
+-> 수식이 path이던 이미지이던 감지 가능하니까
+
+
+1. 이미지 객체가 하나도 없음
+
+| 쪽 | text | path | image |
+|:---:|---:|---:|---:|
+| p.12 | 2026 | 10 | 0 |
+| p.13 | 1674 | 71 | 0 |
+| p.66 | 1578 | 102 | 0 |
+
+수식이 이미지로 삽입되었다면 `image` 객체가 존재해야 하지만, 세 페이지 모두 이미지 객체가 0개
+
+
+2. 수식 자리를 글자 크기의 `path`가 채우고 있음 (p.12)
+
+`for condition A.` 문장이 있는 줄을 살펴보면
+
+| 객체 | x 좌표 | 크기 | 설명 |
+|:---|:---:|:---:|:---|
+| path | 258–267 | 8.9 × 6.7 | 수식 본체의 일부 |
+| path | 267–270 | 3.2 × 3.9 | 수식 본체의 일부 |
+| ... | ... | ... | (7개 더 존재) |
+| path | 304–310 | 5.5 × 6.7 | 수식 본체의 일부 |
+| text | 316–384 | - | `for condition A.` |
+
+다른 수식 줄에서도 마찬가지였다.
+
+<br>
+
+**왜 이게 문제였던걸까?**
+
+1. Docling은 수식의 BBox를 내부 텍스트 셀의 크기에 맞춰 줄인다. (`_adjust_cluster_bboxes`).
+2. 근데 수식 자체에는 텍스트 셀이 없으므로 BBox가 꼬리 텍스트 영역만 남게 된 것.
+3. `CodeFormula`가 전달받은 잘린 영역에는 꼬리 텍스트만 포함되어 있어, 최종적으로 `R \text{for condition} A`와 같은 결과가 생성.
 
 <br>
 
