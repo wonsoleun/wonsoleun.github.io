@@ -19,7 +19,9 @@ export async function GET(context: any) {
             description: pub.data.description || `Published in ${pub.data.journal || 'Journal'}`,
             link: `/publications/${pub.id}/`,
         })),
-    ].sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+    ]
+        .filter((item) => item.pubDate && !isNaN(new Date(item.pubDate).getTime()))
+        .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
     return rss({
         title: SITE.title,
