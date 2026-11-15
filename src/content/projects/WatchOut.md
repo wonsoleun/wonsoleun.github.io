@@ -5,7 +5,6 @@ tags:
   - "Computer Vision"
   - "AI Agent"
   - "RAG"
-external_url: "-"
 ---
 
 ## Project Overview

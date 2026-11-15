@@ -3,7 +3,6 @@ title: "Baseline ~ Docling formula"
 order: 1
 date: "2026-11-12"
 description: "Docling"
-author: "Soleun Won"
 ---
 
 # Sea-Ya 
@@ -172,6 +171,3 @@ Docling은 그대로 두고, 출력된 결과를 문서 단위로 다시 이어 
 - 범용성은 1번이 더 좋지만, DNV처럼 계층이 확실한 문서는 2번으로도 충분할 것으로 판단됌 => 2번으로 결정
 
 ---
-
-## - bbox 같은 줄 판단
-
