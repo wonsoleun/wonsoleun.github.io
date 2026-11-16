@@ -674,7 +674,7 @@ a:hover,
 .prose pre {
     /* !important: override Shiki's inline background so code blocks follow the site theme */
     background: var(--surface) !important;
-    border: 1px solid var(--border);
+    border: 1px solid color-mix(in srgb, var(--border), var(--foreground) 10%);
     border-radius: 0.25rem;
     padding: 1rem;
     overflow-x: auto;
@@ -685,6 +685,13 @@ a:hover,
     background: transparent;
     color: var(--foreground);
     padding: 0;
+    /* Slightly stronger code text: darker in light mode, brighter in dark mode */
+    filter: brightness(0.93);
+}
+
+html[data-theme="dark"] .prose pre code,
+html.dark .prose pre code {
+    filter: brightness(1.07);
 }
 
 /* Shiki dual themes: switch token colors to the dark palette in dark mode */

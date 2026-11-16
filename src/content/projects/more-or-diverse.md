@@ -4,6 +4,7 @@ description: "An Empirical Study on the Effects of Demonstration Quantity and In
 tags:
   - "Imitation Learning"
   - "Diffusion Policy"
+  - "Agent"
 ---
 
 ## Overview
