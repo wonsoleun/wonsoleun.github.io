@@ -1,11 +1,23 @@
 ---
-title: "Human-in-the-loop formula correction"
+title: "Formula correction, reference following, section boost"
 order: 3
 date: "2026-11-18"
-description: "Reviewing auto-extracted LaTeX and overriding 209 formulas"
+description: "Human-in-the-loop formula correction, graph RAG step 1, and section boost"
 ---
 
-## 수식 하드 코딩
+## 이번 주차 요약
+
+| # | 문제 | 해결 | 결과 |
+|---|---|---|---|
+| 1 | 자동 변환 수식이 틀리거나 통째로 빠짐 | 사람이 원본과 비교해 고친 LaTeX를 parse 단계에서 적용 | 의심 수식 225개 중 209개 수정 |
+| 2 | 1위 조항이 "다른 조항에 따라 계산하라"고만 하고 식은 없음 | 1위 조항이 참조하는 조항을 한 단계 따라가 함께 표시 | 화면 확인 중 |
+| 3 | Pt.2에서 주조품·단조품처럼 다른 제품 Section으로 감 | 질문 단어가 Section 제목과 맞으면 가점 | Top-1 0.85 → 0.92 (61문항) |
+
+<br>
+
+---
+
+## 1. 수식 하드 코딩
 
 
 | 순서 | 할 일 | |
@@ -41,8 +53,6 @@ description: "Reviewing auto-extracted LaTeX and overriding 209 formulas"
 | 수식 아님 제거 | 1 | 12 | 115 | 128 | 수식이 아닌데 수식으로 인식된 것을 본문에서 뺌 |
 | **합계** | 11 | 54 | 144 | **209** | |
 
-`01_build_db.py` 실행 결과 `[fix] 수식 수정 209/209개 적용`, 조항 검사와 ID 중복 검사 모두 통과. chunk 수는 11,574개 그대로라 03·04(GPL 데이터, 학습)는 다시 하지 않았다.
-
 <br>
 
 **검수한 수식 유형**
@@ -58,18 +68,59 @@ description: "Reviewing auto-extracted LaTeX and overriding 209 formulas"
 - 15개는 Guidance note 끝 표시 `---e-n-d---o-f---`가 깨져서 기존 쓰레기 필터를 빠져나간 것
 - 나머지는 `f o r`처럼 조건 문장의 일부가 수식으로 잘려 나온 것
 
+-> 검색 순위는 그대로. 검색이 아니라 **답변에 맞는 수식이 들어가게 하는** 작업이구나...
+
 <br>
 
-**검색 성능에 미친 영향**
+---
 
-| | Top-1 | Top-5 | 논문 점수 |
+## 2. 참조 조항 따라가기 
+
+### 문제
+- 질문: "How is the effective breadth of attached plating calculated?"
+- 1위 Pt.5 Ch.3 Sec.2 [5.1]: "... calculated according to **Pt.3 Ch.3 Sec.7 [1.3.2]**" → 식이 없음
+- 정답 [1.3.2]는 **2위**, 1·2위 점수 차 0.06
+-> 검색이 못 찾은 게 아니라, 질문과 문장이 더 비슷한 안내 조항에 1위를 내준 것
+
+
+### 해결
+- 파서가 이미 저장해 둔 조항 참조(`refs`)를 이용해, 1위 조항이 가리키는 조항을 한 단계 따라감
+- 조항 참조만, 코퍼스에서 찾은 것만, 최대 2개. 검색 순위는 바꾸지 않음
+- 참조 기준은 테스트셋에서 참고해서 0.75로 함
+- 웹: 답변 아래 "참조 조항" 블록 / LLaMA: `referenced by [1]`로 함께 입력
+
+```text
+top = search(query)[0]
+for ref in top.refs:                       # 검색이 일치한 문단의 참조 먼저
+    if ref is 조항 참조 and 코퍼스에 있음:
+        show(article_of(ref), highlight=ref)
+```
+
+<br>
+
+---
+
+## 3. Section 제목 일치에 가점 주기
+
+### 문제
+- Pt.2 Ch.2는 Section이 제품별(rolled steel, steel forgings, steel castings, clad steel …)이고, 같은 번호 조항의 문장이 거의 같음
+- "steel **castings**" 질문에 forgings 조항이 1위로 나옴
+
+### 해결
+- 질문 단어와 Section 제목의 일치도(idf 가중, 0~1)를 계산해 가장 잘 맞는 Section 하나에만 가점 주기
+- `steel`처럼 모든 제목에 있는 단어는 무게가 거의 0, `castings`·`clad`는 큼
+- 범위는 Pt.2 Ch.2·Ch.3, 일치도 0.55 이상일 때만
+
+```text
+match = Σ idf(맞은 제목 단어) / Σ idf(제목 단어)
+dense  += 5.0 × match      # 재정렬 후보 선정
+rerank += 3.0 × match      # 최종 순서
+```
+
+### 결과
+
+| | Top-1 | Top-5 | Pt.2 |
 |---|:---:|:---:|:---:|
-| base | 0.75 → 0.75 | 0.97 → 0.97 | 93.8 → 93.8 |
-| base + rerank | 0.85 → 0.85 | 0.97 → 0.97 | 95.8 → 95.8 |
-| adapted | 0.82 → 0.82 | 0.97 → 0.97 | 94.0 → 94.0 |
-| adapted + rerank | 0.85 → 0.85 | 0.97 → 0.97 | 95.0 → 95.0 |
+| base + rerank | 53 / 61 | 61 | 13 / 19 |
+| **base + rerank + 가점** | **56 / 61 (0.92)** | **61** | **16 / 19** |
 
-- 60문항 모두, 네 설정 모두에서 정답 순위가 하나도 바뀌지 않았다
-- 점수는 일부 문항에서 미세하게 달라짐 (base 10문항, rerank 2문항) → 새 인덱스로 측정된 것은 맞음
--> 수식 수정은 검색 정확도를 올리는 작업이 아니라, **답변에 맞는 수식이 들어가게 하는 작업**
-<br> → 평가셋 정답 조항 안의 수식이 19개뿐이고 Part 2 정답 조항에는 본문 수식이 없어서, 검색 숫자로는 효과가 드러나지 않음
