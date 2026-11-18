@@ -1,5 +1,5 @@
 ---
-title: "More or Diverse?"
+title: "UROP: Diffusion Policy in the PushT Environment"
 description: "An Empirical Study on the Effects of Demonstration Quantity and Initial-State Diversity on Diffusion Policy in the PushT Environment."
 tags:
   - "Imitation Learning"
