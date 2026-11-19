@@ -266,3 +266,41 @@ m_t &= o_t \odot c_t
 $$
 
 관련 선행 연구인 Greff et al. 2015에 따르면, 모든 변형 중에서 Vanilla보다 좋은 성능이 나온건 없다고 보고했다. 그리고 해당 논문에서는 두번째 식 LSTM도 변형으로 실험했다. 확인할 부분은 Greff의 논문은 음성, 필기, 음악에서 진행됐다. 그렇다면, 본 논문에서처럼 image captioning에서도 성능이 떨어지는지 확인해볼만 하다.
+
+<br>
+
+- tanh가 빠지면 무슨 영향을 줄까
+
+1. c_t의 크기가 그대로 밖으로
+
+$$
+c_t = f_t \odot c_{t-1} + i_t \odot h(W_{cx} x_t + W_{cm} m_{t-1})
+$$
+
+f와 i gate가 둘 다 1에 가까우면 매 step 최대 ±1씩 쌓이므로, t step 뒤 |c|는 t 근처까지 커질 수 있습니다. tanh가 있으면 m은 ±1 안에 묶이지만, 없으면 큰 c가 m으로 그대로 나온다.
+
+2. 그 큰 m이 다음 step으로 다시 들어감
+
+m\_{t-1}은 식 (4)~(6)의 gate 입력으로 다시 들어간다. 값이 크면 sigmoid가 0이나 1에 가까워져 기울기가 거의 0이 된다. 즉, saturation 문제가 발생하고 이는 gate saturation으로 이어진다. <br>
+m\_t는 softmax를 통해 단어 확률을 만드는 데 쓰이고 값이 크면 확률이 한 단어에 몰리게 된다. 만약 틀린 단어에 확신하면 loss와 gradient가 크게 튀어 학습이 불안정해지는 문제가 발생한다.
+
+3. gradient는 더 잘 흐를 수 있음
+
+$$
+\text{tanh 있음:}\quad
+m_t = o_t \odot \tanh(c_t)
+\;\Rightarrow\;
+\frac{\partial m_t}{\partial c_t} = o_t \odot \bigl(1 - \tanh^2(c_t)\bigr)
+$$
+
+$$
+\text{tanh 없음(식 8):}\quad
+m_t = o_t \odot c_t
+\;\Rightarrow\;
+\frac{\partial m_t}{\partial c_t} = o_t
+$$
+
+| | tanh 있음 (Vanilla) | tanh 없음 |
+|---|---|---|
+| 기울기 $\partial m_t / \partial c_t$ | $\lvert c_t \rvert$가 크면 0에 가까워짐 | 항상 $o_t$ |
+| 출력 $m_t$의 크기 | $-1 \sim 1$로 묶임 | $\lvert c_t \rvert$만큼 커질 수 있음 |
