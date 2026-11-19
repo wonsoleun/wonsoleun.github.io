@@ -12,11 +12,12 @@ tags:
 ## Show and Tell: A Neural Image Caption Generator
 
 
-## Abstract
+## - Abstract
 
 이 논문은 이미지를 CNN으로 벡터 하나로 바꾸고, 그 벡터를 받은 LSTM이 문장을 한 단어씩 생성하는 모델 NIC(Neural Image Caption)를 제안한다. 모델 전체를 하나의 신경망으로 묶어 처음부터 끝까지 함께 학습한다는 점이 핵심이다.
 
 <br>
+
 ---
 
 ## 1. Introduction
@@ -150,7 +151,7 @@ $$
 
 식을 읽는 순서는 다음과 같다.
 
-1. **세 gate 계산 (식 4\~6)**: 현재 입력 x\_t와 직전 출력 m\_{t-1}에 각각 가중치를 곱해 더하고 sigmoid σ를 적용한다. 세 식은 형태가 같고 가중치 행렬(W)만 다르다.
+1. **세 gate 계산 (식 4~6)**: 현재 입력 x\_t와 직전 출력 m\_{t-1}에 각각 가중치를 곱해 더하고 sigmoid σ를 적용한다. 세 식은 형태가 같고 가중치 행렬(W)만 다르다.
 2. **Cell 갱신 (식 7)**: 이전 cell 값 c\_{t-1}에 forget gate를 곱해 남길 만큼 남긴다. 새로 들어온 정보 h(·)에는 input gate를 곱해 더한다. 즉, 이전 정보 값인 c\_{t-1}와 새로운 정보 h를 얼마나 반영할지 정한다. 
 3. **출력 (식 8)**: 새 cell 값에 output gate를 곱한 것이 LSTM의 출력 m\_t이다.
 4. **단어 예측 (식 9)**: m\_t를 Softmax에 넣어 모든 단어에 대한 확률분포 p를 얻는다.
