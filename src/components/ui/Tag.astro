@@ -1,4 +1,6 @@
 ---
+import { PAGES } from "../../config";
+
 interface Props {
     name: string;
     count?: number;
@@ -14,7 +16,14 @@ const sizeClasses = {
 };
 ---
 
-<a href={`/tags/${name.toLowerCase()}`} class={`tag ${sizeClasses[size]}`}>
-    #{name}
-    {count !== undefined && <span class="opacity-60 ml-1">({count})</span>}
-</a>
+{PAGES.tags.isActive !== false ? (
+    <a href={`/tags/${name.toLowerCase()}`} class={`tag ${sizeClasses[size]}`}>
+        #{name}
+        {count !== undefined && <span class="opacity-60 ml-1">({count})</span>}
+    </a>
+) : (
+    <span class={`tag ${sizeClasses[size]}`}>
+        #{name}
+        {count !== undefined && <span class="opacity-60 ml-1">({count})</span>}
+    </span>
+)}

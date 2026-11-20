@@ -8,6 +8,6 @@ export const NAV_LINKS: NavLink[] = [
     { href: "/projects", label: "Projects", isActive: true },
     { href: "/posts", label: "Blog", isActive: true },
     { href: "/playground", label: "Playground", isActive: true },
-    { href: "/tags", label: "Tags", isActive: true },
+    { href: "/tags", label: "Tags", isActive: false },
     { href: "/cv", label: "CV", isActive: true },
 ];

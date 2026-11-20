@@ -9,7 +9,7 @@ export interface PlaygroundSection {
 export const PLAYGROUND_SECTIONS: PlaygroundSection[] = [
     {
         id: "optimization",
-        title: "Optimization & Training",
-        description: "See how optimizers move across a loss landscape, and what learning rates and other hyperparameters change.",
+        title: "Concepts of Machine · Deep Learning",
+        description: "Training dynamics and generalization, hands-on — optimizers, loss landscapes, learning rates, overfitting, and regularization.",
     },
 ];

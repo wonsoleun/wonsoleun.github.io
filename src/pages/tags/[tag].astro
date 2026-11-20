@@ -3,9 +3,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import BaseItemCard from "../../components/ui/BaseItemCard.astro";
 import { getAllTags, getContentByTag } from "../../utils/tags";
 import { getListingItem } from "../../utils/adapters";
-import { SITE } from "../../config";
+import { SITE, PAGES } from "../../config";
 
 export async function getStaticPaths() {
+    if (PAGES.tags.isActive === false) return [];
     const tags = await getAllTags();
     return tags.map((tag) => ({
         params: { tag: tag.name },
