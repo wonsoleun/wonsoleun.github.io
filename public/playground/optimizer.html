@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Optimizer Playground</title>
-<meta name="description" content="SGD, AdaGrad, RMSprop, Adam, AdamW, Rprop이 비볼록 함수 위에서 움직이는 경로를 브라우저에서 바로 비교하는 인터랙티브 데모">
+<meta name="description" content="An interactive in-browser demo comparing the paths SGD, AdaGrad, RMSprop, Adam, AdamW, and Rprop take on a non-convex function">
 <style>
   :root {
     --bg: #f7f7f5;
@@ -81,14 +81,14 @@
     <a class="back" href="/playground">← Playground</a>
     <span class="tag">Playground · Optimization</span>
     <h1>Optimizer Playground</h1>
-    <p>같은 출발점에서 6개 옵티마이저가 울퉁불퉁한 손실 지형을 어떻게 내려가는지 비교해요.
-       지형을 클릭해 출발점을 바꾸고, 학습률을 조절하면서 지역 최솟값에 갇히는지, 진동하는지, 발산하는지 확인해 보세요.</p>
+    <p>Compare how six optimizers descend a bumpy loss landscape from the same starting point.
+       Click the landscape to move the starting point, then tune the learning rates to see which ones get stuck in local minima, oscillate, or diverge.</p>
   </header>
 
   <div class="grid">
     <section class="card">
-      <div class="plot-wrap"><canvas id="plot" aria-label="손실 지형과 옵티마이저 경로"></canvas></div>
-      <p class="hint">지형을 클릭하면 출발점이 바뀌어요 · ● 출발점 · ★ 전역 최솟값(격자 탐색) · 등고선 간격 2</p>
+      <div class="plot-wrap"><canvas id="plot" aria-label="Loss landscape and optimizer paths"></canvas></div>
+      <p class="hint">Click the landscape to set the starting point · ● start · ★ global minimum (grid search) · contour interval 2</p>
     </section>
 
     <section class="card">
@@ -97,39 +97,39 @@
           <button data-fn="f1" class="on">f1</button>
           <button data-fn="f2">f2</button>
         </div>
-        <button class="btn primary" id="play">▶ 재생</button>
+        <button class="btn primary" id="play">▶ Play</button>
         <button class="btn" id="stepBtn">1 step</button>
-        <button class="btn" id="reset">리셋</button>
+        <button class="btn" id="reset">Reset</button>
       </div>
       <div class="controls" style="margin-top:10px">
-        <label class="inline">속도 <input type="range" id="speed" min="0.1" max="5" step="0.1" value="0.5"><span class="val" id="speedV">0.5</span></label>
-        <label class="inline">최대 반복 <input type="range" id="maxIter" min="50" max="1000" step="50" value="300"><span class="val" id="maxIterV">300</span></label>
+        <label class="inline">Speed <input type="range" id="speed" min="0.1" max="5" step="0.1" value="0.5"><span class="val" id="speedV">0.5</span></label>
+        <label class="inline">Max iters <input type="range" id="maxIter" min="50" max="1000" step="50" value="300"><span class="val" id="maxIterV">300</span></label>
         <label class="inline">AdamW λ <input type="range" id="wd" min="0" max="0.5" step="0.01" value="0.05"><span class="val" id="wdV">0.05</span></label>
       </div>
       <div class="status-line" id="fnLabel"></div>
-      <div class="status-line">iteration <b id="iter">0</b> · 출발점 <b id="start"></b></div>
+      <div class="status-line">iteration <b id="iter">0</b> · start <b id="start"></b></div>
 
       <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>옵티마이저</th><th>lr</th><th>f(x, y)</th><th>(x, y)</th><th>상태</th></tr></thead>
+        <thead><tr><th>Optimizer</th><th>lr</th><th>f(x, y)</th><th>(x, y)</th><th>Status</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
       </div>
 
-      <div class="loss-title">반복에 따른 f(x, y)</div>
+      <div class="loss-title">f(x, y) over iterations</div>
       <div class="loss-wrap"><canvas id="loss"></canvas></div>
     </section>
   </div>
 
-  <h2>각 옵티마이저는 어떻게 움직이나</h2>
+  <h2>How each optimizer moves</h2>
   <div class="notes" id="notes"></div>
 
-  <footer>순수 JavaScript + Canvas, 외부 라이브러리 없음 · 업데이트 식은 PyTorch 기본 하이퍼파라미터(β₁=0.9, β₂=0.999, α=0.99, Rprop η=(0.5, 1.2))를 따름 · Made by SOL</footer>
+  <footer>Plain JavaScript + Canvas, no external libraries · Update rules follow PyTorch default hyperparameters (β₁=0.9, β₂=0.999, α=0.99, Rprop η=(0.5, 1.2)) · Made by SOL</footer>
 </main>
 
 <script>
 (() => {
-  // ---------- 함수 정의 ----------
+  // ---------- Functions ----------
   const FUNCS = {
     f1: {
       expr: "f1(x, y) = x² + y² + 5·sin(x + y²)",
@@ -142,30 +142,30 @@
       g: (x, y) => { const c = 5 * Math.cos(x + 2 * y * y); return [2 * x + c, 2 * y + c * 4 * y]; }
     }
   };
-  const R = 4; // 정의역 [-R, R]²
+  const R = 4; // domain [-R, R]²
 
   const OPTS = [
     { id: "sgd",     name: "SGD",     color: "#d6404a", lr: 0.05,
       eq: "θ ← θ − η·g",
-      desc: "기울기 방향으로 일정 비율만큼 이동. 가파른 곳에서는 크게, 평평한 곳에서는 작게 움직여요." },
+      desc: "Steps along the gradient by a fixed fraction. Takes big steps where it is steep and small steps where it is flat." },
     { id: "adagrad", name: "AdaGrad", color: "#e08a00", lr: 0.5,
       eq: "h ← h + g²\nθ ← θ − η·g / √h",
-      desc: "기울기 제곱을 누적해 파라미터마다 학습률을 나눠요. 누적만 하므로 갈수록 걸음이 작아져요." },
+      desc: "Accumulates squared gradients and scales each parameter's learning rate down by them. Since it only accumulates, steps keep shrinking over time." },
     { id: "rmsprop", name: "RMSprop", color: "#13906a", lr: 0.05,
       eq: "v ← αv + (1−α)g²\nθ ← θ − η·g / √v",
-      desc: "AdaGrad의 누적을 지수이동평균으로 바꿔, 오래된 기울기는 잊어요. 걸음이 0으로 줄지 않아요." },
+      desc: "Replaces AdaGrad's running sum with an exponential moving average, so old gradients fade out. Steps don't shrink to zero." },
     { id: "adam",    name: "Adam",    color: "#2f6fd6", lr: 0.1,
       eq: "m ← β₁m + (1−β₁)g\nv ← β₂v + (1−β₂)g²\nθ ← θ − η·m̂ / √v̂",
-      desc: "모멘텀(m)과 RMSprop(v)을 합치고 초반 편향을 보정해요. 걸음 크기가 대략 η로 일정해요." },
+      desc: "Combines momentum (m) with RMSprop (v) and corrects the early-step bias. Step size stays roughly η." },
     { id: "adamw",   name: "AdamW",   color: "#7c4ddb", lr: 0.1, dash: true,
-      eq: "θ ← θ − ηλθ\n(그 다음 Adam 업데이트)",
-      desc: "weight decay를 기울기와 분리해 파라미터에 직접 적용해요. λ가 클수록 원점 쪽으로 끌려가요." },
+      eq: "θ ← θ − ηλθ\n(then the Adam update)",
+      desc: "Decouples weight decay from the gradient and applies it directly to the parameters. Larger λ pulls harder toward the origin." },
     { id: "rprop",   name: "Rprop",   color: "#c93d8f", lr: 0.05,
-      eq: "부호 같으면 Δ×1.2, 바뀌면 Δ×0.5\nθ ← θ − sign(g)·Δ",
-      desc: "기울기 크기는 무시하고 부호만 봐요. 같은 방향이면 걸음을 키우고, 지나치면 줄여요." }
+      eq: "same sign: Δ×1.2, flipped: Δ×0.5\nθ ← θ − sign(g)·Δ",
+      desc: "Ignores gradient magnitude and uses only its sign. Grows the step while the direction holds, and shrinks it after overshooting." }
   ];
 
-  // ---------- 옵티마이저 ----------
+  // ---------- Optimizers ----------
   function makeOpt(id, lr, wd) {
     const eps = 1e-8;
     const s = { t: 0, m: [0, 0], v: [0, 0], h: [0, 0], prev: [0, 0], step: [lr, lr] };
@@ -201,14 +201,14 @@
     };
   }
 
-  // ---------- 상태 ----------
+  // ---------- State ----------
   const state = {
     fn: "f1",
     start: [-2.5, 2.2],
     iter: 0,
     maxIter: 300,
     speed: 0.5,
-    acc: 0, // 소수 속도용 누적 스텝
+    acc: 0, // accumulated steps for fractional speeds
     wd: 0.05,
     playing: false,
     enabled: Object.fromEntries(OPTS.map(o => [o.id, true])),
@@ -247,7 +247,7 @@
       if (n > 5) {
         const a = r.path[n - 1], b = r.path[n - 6];
         const gn = Math.hypot(...fn.g(a[0], a[1]));
-        // AdamW는 weight decay 때문에 멈춘 지점에서도 원래 기울기가 0이 아니므로 이동량만으로 판정
+        // With weight decay, AdamW settles where the raw gradient is nonzero, so judge it by movement only
         if (Math.hypot(a[0] - b[0], a[1] - b[1]) < 1e-4 && (o.id === "adamw" || gn < 1e-2)) r.status = "ok";
       }
     }
@@ -258,7 +258,7 @@
     return true;
   }
 
-  // ---------- 전역 최솟값 (격자 탐색) ----------
+  // ---------- Global minimum (grid search) ----------
   function globalMin(fn) {
     let best = [0, 0, Infinity];
     const N = 600;
@@ -270,13 +270,13 @@
   }
   const GMIN = { f1: globalMin(FUNCS.f1), f2: globalMin(FUNCS.f2) };
 
-  // ---------- 지형 렌더 ----------
+  // ---------- Terrain rendering ----------
   const plot = document.getElementById("plot");
   const pctx = plot.getContext("2d");
   const bg = document.createElement("canvas");
   let PW = 0, dpr = 1;
 
-  const STOPS = [[247, 248, 250], [208, 220, 235], [134, 160, 196], [62, 86, 128]]; // 낮음 → 높음
+  const STOPS = [[247, 248, 250], [208, 220, 235], [134, 160, 196], [62, 86, 128]]; // low → high
 
   function colorAt(t) {
     t = isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
@@ -319,7 +319,7 @@
     if (!PW) return;
     pctx.setLineDash([]);
     pctx.drawImage(bg, 0, 0);
-    // 축
+    // axes
     pctx.strokeStyle = "rgba(40,50,70,.25)"; pctx.lineWidth = 1 * dpr;
     const [ox, oy] = toPx(0, 0);
     pctx.beginPath(); pctx.moveTo(0, oy); pctx.lineTo(PW, oy); pctx.moveTo(ox, 0); pctx.lineTo(ox, PW); pctx.stroke();
@@ -329,17 +329,17 @@
       pctx.fillText(t, tx + 3 * dpr, oy - 4 * dpr);
       pctx.fillText(t, ox + 4 * dpr, ty - 3 * dpr);
     }
-    // 전역 최솟값
+    // global minimum
     const gm = GMIN[state.fn], [gx, gy] = toPx(gm[0], gm[1]);
     drawStar(gx, gy, 9 * dpr);
-    // 경로
+    // paths
     for (const o of OPTS) {
       if (!state.enabled[o.id]) continue;
       const r = state.runs[o.id];
       if (!r || r.path.length < 1) continue;
       pctx.lineJoin = "round"; pctx.lineCap = "round";
       const pts = r.path.map(q => toPx(q[0], q[1]));
-      // 흰 테두리
+      // white outline
       pctx.setLineDash([]);
       pctx.strokeStyle = "rgba(255,255,255,.85)"; pctx.lineWidth = 5 * dpr;
       tracePath(pts); pctx.stroke();
@@ -352,7 +352,7 @@
       pctx.fillStyle = o.color; pctx.fill();
       pctx.lineWidth = 2 * dpr; pctx.strokeStyle = "#fff"; pctx.stroke();
     }
-    // 출발점
+    // starting point
     const [sx, sy] = toPx(state.start[0], state.start[1]);
     pctx.beginPath(); pctx.arc(sx, sy, 6 * dpr, 0, Math.PI * 2);
     pctx.fillStyle = "#1c1d1f"; pctx.fill(); pctx.lineWidth = 2 * dpr; pctx.strokeStyle = "#fff"; pctx.stroke();
@@ -374,7 +374,7 @@
     pctx.lineWidth = 1.5 * dpr; pctx.strokeStyle = "#1c1d1f"; pctx.stroke();
   }
 
-  // ---------- 손실 그래프 ----------
+  // ---------- Loss chart ----------
   const loss = document.getElementById("loss");
   const lctx = loss.getContext("2d");
 
@@ -394,7 +394,7 @@
     const ymin = Math.floor(gm) - 1; ymax = Math.ceil(ymax) + 1;
     const X = i => padL + (W - padL - padR) * i / state.maxIter;
     const Y = v => padT + (H - padT - padB) * (1 - (Math.max(ymin, Math.min(ymax, v)) - ymin) / (ymax - ymin));
-    // 격자
+    // grid
     lctx.font = `${10 * dpr}px system-ui`; lctx.fillStyle = "#8a8e95"; lctx.strokeStyle = "#ececea"; lctx.lineWidth = 1 * dpr;
     const ticks = 4;
     for (let i = 0; i <= ticks; i++) {
@@ -404,11 +404,11 @@
     }
     lctx.textAlign = "center";
     for (const i of [0, state.maxIter / 2, state.maxIter]) { lctx.textAlign = i === 0 ? "left" : i === state.maxIter ? "right" : "center"; lctx.fillText(i, X(i), H - 5 * dpr); }
-    // 전역 최솟값 기준선
+    // global minimum reference line
     lctx.setLineDash([3 * dpr, 3 * dpr]); lctx.strokeStyle = "#c9a100";
     lctx.beginPath(); lctx.moveTo(padL, Y(gm)); lctx.lineTo(W - padR, Y(gm)); lctx.stroke();
     lctx.setLineDash([]);
-    // 선
+    // lines
     for (const o of OPTS) {
       const r = state.runs[o.id];
       if (!state.enabled[o.id] || !r) continue;
@@ -421,7 +421,7 @@
     lctx.setLineDash([]);
   }
 
-  // ---------- 표 ----------
+  // ---------- Table ----------
   const tbody = document.getElementById("tbody");
   const cells = {};
   for (const o of OPTS) {
@@ -440,7 +440,7 @@
     });
     cells[o.id] = { fv: tr.querySelector(".fv"), xy: tr.querySelector(".xy"), st: tr.querySelector(".st") };
   }
-  const ST = { run: ["run", "진행 중"], ok: ["ok", "수렴"], bad: ["bad", "발산"], end: ["end", "최대 반복"] };
+  const ST = { run: ["run", "Running"], ok: ["ok", "Converged"], bad: ["bad", "Diverged"], end: ["end", "Max iters"] };
 
   function updateTable() {
     for (const o of OPTS) {
@@ -448,19 +448,19 @@
       const last = r.path[r.path.length - 1];
       c.fv.textContent = r.status === "bad" ? "—" : r.fh[r.fh.length - 1].toFixed(3);
       c.xy.textContent = r.status === "bad" ? "—" : `(${last[0].toFixed(2)}, ${last[1].toFixed(2)})`;
-      const [cls, txt] = (state.iter === 0 && r.status === "run") ? ["run", "대기"] : ST[r.status];
+      const [cls, txt] = (state.iter === 0 && r.status === "run") ? ["run", "Ready"] : ST[r.status];
       c.st.className = "st " + cls; c.st.textContent = txt;
     }
     document.getElementById("iter").textContent = state.iter;
     document.getElementById("start").textContent = `(${state.start[0].toFixed(2)}, ${state.start[1].toFixed(2)})`;
     const gm = GMIN[state.fn];
     document.getElementById("fnLabel").innerHTML =
-      `<b>${F().expr}</b> · 전역 최솟값 ≈ ${gm[2].toFixed(3)} at (${gm[0].toFixed(2)}, ${gm[1].toFixed(2)})`;
+      `<b>${F().expr}</b> · global min ≈ ${gm[2].toFixed(3)} at (${gm[0].toFixed(2)}, ${gm[1].toFixed(2)})`;
   }
 
   function redraw() { drawPlot(); drawLoss(); updateTable(); }
 
-  // ---------- 노트 ----------
+  // ---------- Notes ----------
   const notes = document.getElementById("notes");
   for (const o of OPTS) {
     const d = document.createElement("div");
@@ -470,19 +470,19 @@
     notes.appendChild(d);
   }
 
-  // ---------- 컨트롤 ----------
+  // ---------- Controls ----------
   const playBtn = document.getElementById("play");
   let rafId = 0;
   function setPlaying(v) {
     state.playing = v;
     state.acc = 0;
-    playBtn.textContent = v ? "❚❚ 정지" : "▶ 재생";
-    cancelAnimationFrame(rafId); // 정지→재생을 빠르게 눌러도 루프가 겹치지 않게
+    playBtn.textContent = v ? "❚❚ Pause" : "▶ Play";
+    cancelAnimationFrame(rafId); // avoid overlapping loops on rapid pause→play
     if (v) rafId = requestAnimationFrame(loop);
   }
   function loop() {
     if (!state.playing) return;
-    // 속도 = 프레임당 스텝 수 (0.1이면 10프레임에 1스텝)
+    // speed = steps per frame (0.1 means one step every 10 frames)
     state.acc += state.speed;
     let done = false;
     while (state.acc >= 1) { state.acc -= 1; if (!stepAll()) { done = true; break; } }

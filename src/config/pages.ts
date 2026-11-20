@@ -33,7 +33,7 @@ export const PAGES: PagesConfig = {
     },
     playground: {
         title: "Playground",
-        subtitle: "브라우저에서 바로 돌려보는 인터랙티브 ML 데모 모음. 값을 바꾸면서 개념을 직접 느껴 보세요.",
+        subtitle: "Interactive ML demos that run right in your browser. Tweak the values and get a feel for the concepts.",
         isActive: true,
     },
     tags: {

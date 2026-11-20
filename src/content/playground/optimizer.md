@@ -1,6 +1,6 @@
 ---
 title: Optimizer Playground
-description: SGD, AdaGrad, RMSprop, Adam, AdamW, Rprop이 같은 출발점에서 비볼록 함수를 내려가는 경로를 비교해요. 학습률을 바꾸며 지역 최솟값·진동·발산을 관찰해 보세요.
+description: "Compare how SGD, AdaGrad, RMSprop, Adam, AdamW, and Rprop descend a non-convex function from the same starting point. Adjust the learning rates to see local minima, oscillation, and divergence."
 section: optimization
 tags: [Optimization, Adam, Interactive]
 href: /playground/optimizer.html

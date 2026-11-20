@@ -87,8 +87,8 @@ const projectPosts = defineCollection({
     }),
 });
 
-// Playground 데모 카드 (예: src/content/playground/optimizer.md)
-// md 파일 하나 = 카드 하나. section 값으로 src/config/playground.ts의 섹션에 묶임.
+// Playground demo cards (e.g. src/content/playground/optimizer.md)
+// One md file = one card. Grouped into sections from src/config/playground.ts by `section`.
 const playground = defineCollection({
     loader: glob({ pattern: "**/*.md", base: "./src/content/playground" }),
     schema: z.object({
@@ -96,9 +96,9 @@ const playground = defineCollection({
         description: z.string(),
         section: z.string(),
         tags: z.array(z.string()).optional(),
-        href: z.string().optional(),          // 데모 주소 (public/playground/...)
-        thumbnail: z.string().optional(),     // 카드 상단 그림 (public/ 기준 경로)
-        color: z.string().optional(),         // 카드 상단 선 색 (없으면 테마 accent)
+        href: z.string().optional(),          // demo URL (public/playground/...)
+        thumbnail: z.string().optional(),     // card thumbnail (path relative to public/)
+        color: z.string().optional(),         // card top-border color (defaults to theme accent)
         status: z.enum(["live", "soon"]).default("live"),
         order: z.number().optional(),
     }),

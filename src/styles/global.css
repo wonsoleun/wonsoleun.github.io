@@ -981,7 +981,7 @@ html.dark .astro-code span {
 }
 /* =========================================================
    Playground (src/pages/playground.astro)
-   카드 목록은 src/content/playground/*.md, 섹션은 src/config/playground.ts
+   Cards: src/content/playground/*.md, sections: src/config/playground.ts
    ========================================================= */
 .pg-section {
     margin-bottom: 2.5rem;

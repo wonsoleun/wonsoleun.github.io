@@ -11,7 +11,7 @@ const demos = (await getCollection("playground")).sort(
     (a, b) => (a.data.order ?? 999) - (b.data.order ?? 999) || a.data.title.localeCompare(b.data.title),
 );
 
-// config에 없는 section 값은 "More" 섹션으로 모아요
+// Demos whose section is not in the config go into a "More" section
 const known = new Set(PLAYGROUND_SECTIONS.map((s) => s.id));
 const sections = [
     ...PLAYGROUND_SECTIONS,
@@ -80,5 +80,5 @@ const sections = [
         );
     })}
 
-    {sections.length === 0 && <p class="body">아직 등록된 데모가 없어요.</p>}
+    {sections.length === 0 && <p class="body">No demos yet.</p>}
 </BaseLayout>
