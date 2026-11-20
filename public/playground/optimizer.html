@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimizer Playground</title>
+<meta name="description" content="SGD, AdaGrad, RMSprop, Adam, AdamW, Rprop이 비볼록 함수 위에서 움직이는 경로를 브라우저에서 바로 비교하는 인터랙티브 데모">
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --ink: #1c1d1f;
+    --muted: #6b6f76;
+    --line: #e4e4e0;
+    --accent: #2f5d8a;
+    --radius: 14px;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px 20px 56px; }
+  header h1 { font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--muted); max-width: 760px; }
+  .back { display: block; font-size: .85rem; color: var(--muted); text-decoration: none; margin-bottom: 14px; }
+  .back:hover { color: var(--accent); }
+  .tag { display: inline-block; font-size: .75rem; font-weight: 600; color: var(--accent);
+         background: #e8eef5; padding: 2px 8px; border-radius: 99px; margin-bottom: 10px; }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; margin-top: 24px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .plot-wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; }
+  #plot { width: 100%; height: 100%; display: block; border-radius: 10px; cursor: crosshair; }
+  .hint { font-size: .82rem; color: var(--muted); margin: 10px 2px 0; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; padding: 7px 12px; font: inherit; font-size: .88rem; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: var(--ink); color: #fff; }
+  .btn { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 7px 13px; font: inherit; font-size: .88rem; cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; min-width: 84px; }
+  .btn:hover { filter: brightness(0.97); }
+  label.inline { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--muted); }
+  label.inline input[type=range] { width: 92px; }
+  .val { font-variant-numeric: tabular-nums; color: var(--ink); min-width: 2.6em; display: inline-block; }
+  .status-line { margin-top: 10px; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .status-line b { color: var(--ink); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: .86rem; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: .76rem; padding: 6px 6px; border-bottom: 1px solid var(--line); }
+  td { padding: 6px 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  tr.off td:not(:first-child) { opacity: .35; }
+  .name { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+  .sw { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
+  .sw.dash { background-image: repeating-linear-gradient(90deg, currentColor 0 5px, transparent 5px 8px) !important; background-color: transparent !important; }
+  td input[type=number] { width: 66px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: .84rem; }
+  .st { font-size: .76rem; padding: 1px 7px; border-radius: 99px; }
+  .st.run { background: #eef2f6; color: #4a5866; }
+  .st.ok { background: #e3f4ea; color: #1d6b3c; }
+  .st.bad { background: #fbe6e6; color: #9b2a2a; }
+  .st.end { background: #f1efe8; color: #6b5f3c; }
+
+  .loss-title { font-size: .8rem; color: var(--muted); margin: 16px 0 6px; font-weight: 600; }
+  .loss-wrap { position: relative; width: 100%; height: 190px; }
+  #loss { width: 100%; height: 100%; display: block; }
+
+  h2 { font-size: 1.15rem; margin: 36px 0 12px; letter-spacing: -0.01em; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .note h3 { margin: 0 0 4px; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+  .note code { display: block; font-family: "JetBrains Mono", Consolas, monospace; font-size: .78rem; background: #f4f4f1;
+               padding: 7px 9px; border-radius: 7px; margin: 6px 0; white-space: pre-wrap; color: #33363b; }
+  .note p { margin: 0; font-size: .85rem; color: var(--muted); }
+  footer { margin-top: 40px; font-size: .78rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a class="back" href="/playground">← Playground</a>
+    <span class="tag">Playground · Optimization</span>
+    <h1>Optimizer Playground</h1>
+    <p>같은 출발점에서 6개 옵티마이저가 울퉁불퉁한 손실 지형을 어떻게 내려가는지 비교해요.
+       지형을 클릭해 출발점을 바꾸고, 학습률을 조절하면서 지역 최솟값에 갇히는지, 진동하는지, 발산하는지 확인해 보세요.</p>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <div class="plot-wrap"><canvas id="plot" aria-label="손실 지형과 옵티마이저 경로"></canvas></div>
+      <p class="hint">지형을 클릭하면 출발점이 바뀌어요 · ● 출발점 · ★ 전역 최솟값(격자 탐색) · 등고선 간격 2</p>
+    </section>
+
+    <section class="card">
+      <div class="controls">
+        <div class="seg" id="fn-seg">
+          <button data-fn="f1" class="on">f1</button>
+          <button data-fn="f2">f2</button>
+        </div>
+        <button class="btn primary" id="play">▶ 재생</button>
+        <button class="btn" id="stepBtn">1 step</button>
+        <button class="btn" id="reset">리셋</button>
+      </div>
+      <div class="controls" style="margin-top:10px">
+        <label class="inline">속도 <input type="range" id="speed" min="0.1" max="5" step="0.1" value="0.5"><span class="val" id="speedV">0.5</span></label>
+        <label class="inline">최대 반복 <input type="range" id="maxIter" min="50" max="1000" step="50" value="300"><span class="val" id="maxIterV">300</span></label>
+        <label class="inline">AdamW λ <input type="range" id="wd" min="0" max="0.5" step="0.01" value="0.05"><span class="val" id="wdV">0.05</span></label>
+      </div>
+      <div class="status-line" id="fnLabel"></div>
+      <div class="status-line">iteration <b id="iter">0</b> · 출발점 <b id="start"></b></div>
+
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>옵티마이저</th><th>lr</th><th>f(x, y)</th><th>(x, y)</th><th>상태</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      </div>
+
+      <div class="loss-title">반복에 따른 f(x, y)</div>
+      <div class="loss-wrap"><canvas id="loss"></canvas></div>
+    </section>
+  </div>
+
+  <h2>각 옵티마이저는 어떻게 움직이나</h2>
+  <div class="notes" id="notes"></div>
+
+  <footer>순수 JavaScript + Canvas, 외부 라이브러리 없음 · 업데이트 식은 PyTorch 기본 하이퍼파라미터(β₁=0.9, β₂=0.999, α=0.99, Rprop η=(0.5, 1.2))를 따름 · Made by SOL</footer>
+</main>
+
+<script>
+(() => {
+  // ---------- 함수 정의 ----------
+  const FUNCS = {
+    f1: {
+      expr: "f1(x, y) = x² + y² + 5·sin(x + y²)",
+      f: (x, y) => x * x + y * y + 5 * Math.sin(x + y * y),
+      g: (x, y) => { const c = 5 * Math.cos(x + y * y); return [2 * x + c, 2 * y + c * 2 * y]; }
+    },
+    f2: {
+      expr: "f2(x, y) = x² + y² + 5·sin(x + 2y²)",
+      f: (x, y) => x * x + y * y + 5 * Math.sin(x + 2 * y * y),
+      g: (x, y) => { const c = 5 * Math.cos(x + 2 * y * y); return [2 * x + c, 2 * y + c * 4 * y]; }
+    }
+  };
+  const R = 4; // 정의역 [-R, R]²
+
+  const OPTS = [
+    { id: "sgd",     name: "SGD",     color: "#d6404a", lr: 0.05,
+      eq: "θ ← θ − η·g",
+      desc: "기울기 방향으로 일정 비율만큼 이동. 가파른 곳에서는 크게, 평평한 곳에서는 작게 움직여요." },
+    { id: "adagrad", name: "AdaGrad", color: "#e08a00", lr: 0.5,
+      eq: "h ← h + g²\nθ ← θ − η·g / √h",
+      desc: "기울기 제곱을 누적해 파라미터마다 학습률을 나눠요. 누적만 하므로 갈수록 걸음이 작아져요." },
+    { id: "rmsprop", name: "RMSprop", color: "#13906a", lr: 0.05,
+      eq: "v ← αv + (1−α)g²\nθ ← θ − η·g / √v",
+      desc: "AdaGrad의 누적을 지수이동평균으로 바꿔, 오래된 기울기는 잊어요. 걸음이 0으로 줄지 않아요." },
+    { id: "adam",    name: "Adam",    color: "#2f6fd6", lr: 0.1,
+      eq: "m ← β₁m + (1−β₁)g\nv ← β₂v + (1−β₂)g²\nθ ← θ − η·m̂ / √v̂",
+      desc: "모멘텀(m)과 RMSprop(v)을 합치고 초반 편향을 보정해요. 걸음 크기가 대략 η로 일정해요." },
+    { id: "adamw",   name: "AdamW",   color: "#7c4ddb", lr: 0.1, dash: true,
+      eq: "θ ← θ − ηλθ\n(그 다음 Adam 업데이트)",
+      desc: "weight decay를 기울기와 분리해 파라미터에 직접 적용해요. λ가 클수록 원점 쪽으로 끌려가요." },
+    { id: "rprop",   name: "Rprop",   color: "#c93d8f", lr: 0.05,
+      eq: "부호 같으면 Δ×1.2, 바뀌면 Δ×0.5\nθ ← θ − sign(g)·Δ",
+      desc: "기울기 크기는 무시하고 부호만 봐요. 같은 방향이면 걸음을 키우고, 지나치면 줄여요." }
+  ];
+
+  // ---------- 옵티마이저 ----------
+  function makeOpt(id, lr, wd) {
+    const eps = 1e-8;
+    const s = { t: 0, m: [0, 0], v: [0, 0], h: [0, 0], prev: [0, 0], step: [lr, lr] };
+    return (p, g) => {
+      s.t++;
+      for (let i = 0; i < 2; i++) {
+        const gi = g[i];
+        switch (id) {
+          case "sgd": p[i] -= lr * gi; break;
+          case "adagrad": s.h[i] += gi * gi; p[i] -= lr * gi / (Math.sqrt(s.h[i]) + 1e-10); break;
+          case "rmsprop": s.v[i] = 0.99 * s.v[i] + 0.01 * gi * gi; p[i] -= lr * gi / (Math.sqrt(s.v[i]) + eps); break;
+          case "adam":
+          case "adamw": {
+            if (id === "adamw") p[i] -= lr * wd * p[i];
+            s.m[i] = 0.9 * s.m[i] + 0.1 * gi;
+            s.v[i] = 0.999 * s.v[i] + 0.001 * gi * gi;
+            const mh = s.m[i] / (1 - Math.pow(0.9, s.t));
+            const vh = s.v[i] / (1 - Math.pow(0.999, s.t));
+            p[i] -= lr * mh / (Math.sqrt(vh) + eps);
+            break;
+          }
+          case "rprop": {
+            let g2 = gi;
+            const sgn = gi * s.prev[i];
+            if (sgn > 0) s.step[i] = Math.min(s.step[i] * 1.2, 50);
+            else if (sgn < 0) { s.step[i] = Math.max(s.step[i] * 0.5, 1e-6); g2 = 0; }
+            p[i] -= Math.sign(g2) * s.step[i];
+            s.prev[i] = g2;
+            break;
+          }
+        }
+      }
+    };
+  }
+
+  // ---------- 상태 ----------
+  const state = {
+    fn: "f1",
+    start: [-2.5, 2.2],
+    iter: 0,
+    maxIter: 300,
+    speed: 0.5,
+    acc: 0, // 소수 속도용 누적 스텝
+    wd: 0.05,
+    playing: false,
+    enabled: Object.fromEntries(OPTS.map(o => [o.id, true])),
+    lrs: Object.fromEntries(OPTS.map(o => [o.id, o.lr])),
+    runs: {}
+  };
+  const F = () => FUNCS[state.fn];
+
+  function resetRuns() {
+    state.iter = 0;
+    const fn = F();
+    for (const o of OPTS) {
+      const p = state.start.slice();
+      state.runs[o.id] = {
+        p, path: [p.slice()], fh: [fn.f(p[0], p[1])],
+        status: "run", step: makeOpt(o.id, state.lrs[o.id], state.wd)
+      };
+    }
+  }
+
+  function stepAll() {
+    if (state.iter >= state.maxIter) return false;
+    const fn = F();
+    for (const o of OPTS) {
+      const r = state.runs[o.id];
+      if (r.status !== "run") continue;
+      const g = fn.g(r.p[0], r.p[1]);
+      r.step(r.p, g);
+      if (!isFinite(r.p[0]) || !isFinite(r.p[1]) || Math.abs(r.p[0]) > 60 || Math.abs(r.p[1]) > 60) {
+        r.status = "bad";
+        continue;
+      }
+      r.path.push(r.p.slice());
+      r.fh.push(fn.f(r.p[0], r.p[1]));
+      const n = r.path.length;
+      if (n > 5) {
+        const a = r.path[n - 1], b = r.path[n - 6];
+        const gn = Math.hypot(...fn.g(a[0], a[1]));
+        // AdamW는 weight decay 때문에 멈춘 지점에서도 원래 기울기가 0이 아니므로 이동량만으로 판정
+        if (Math.hypot(a[0] - b[0], a[1] - b[1]) < 1e-4 && (o.id === "adamw" || gn < 1e-2)) r.status = "ok";
+      }
+    }
+    state.iter++;
+    if (state.iter >= state.maxIter) {
+      for (const o of OPTS) if (state.runs[o.id].status === "run") state.runs[o.id].status = "end";
+    }
+    return true;
+  }
+
+  // ---------- 전역 최솟값 (격자 탐색) ----------
+  function globalMin(fn) {
+    let best = [0, 0, Infinity];
+    const N = 600;
+    for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) {
+      const x = -R + 2 * R * i / N, y = -R + 2 * R * j / N, v = fn.f(x, y);
+      if (v < best[2]) best = [x, y, v];
+    }
+    return best;
+  }
+  const GMIN = { f1: globalMin(FUNCS.f1), f2: globalMin(FUNCS.f2) };
+
+  // ---------- 지형 렌더 ----------
+  const plot = document.getElementById("plot");
+  const pctx = plot.getContext("2d");
+  const bg = document.createElement("canvas");
+  let PW = 0, dpr = 1;
+
+  const STOPS = [[247, 248, 250], [208, 220, 235], [134, 160, 196], [62, 86, 128]]; // 낮음 → 높음
+
+  function colorAt(t) {
+    t = isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
+    const k = t * (STOPS.length - 1), i = Math.min(Math.floor(k), STOPS.length - 2), u = k - i;
+    return STOPS[i].map((c, j) => c + (STOPS[i + 1][j] - c) * u);
+  }
+
+  function renderTerrain() {
+    const rect = plot.getBoundingClientRect();
+    dpr = window.devicePixelRatio || 1;
+    PW = Math.round(rect.width * dpr);
+    if (PW <= 0) return;
+    plot.width = plot.height = PW;
+    bg.width = bg.height = PW;
+    const fn = F();
+    const vals = new Float32Array(PW * PW);
+    let lo = Infinity, hi = -Infinity;
+    for (let py = 0; py < PW; py++) for (let px = 0; px < PW; px++) {
+      const x = -R + 2 * R * (px + 0.5) / PW, y = R - 2 * R * (py + 0.5) / PW;
+      const v = fn.f(x, y); vals[py * PW + px] = v;
+      if (v < lo) lo = v; if (v > hi) hi = v;
+    }
+    const img = bg.getContext("2d").createImageData(PW, PW);
+    const band = v => Math.floor(v / 2);
+    for (let py = 0; py < PW; py++) for (let px = 0; px < PW; px++) {
+      const k = py * PW + px, v = vals[k];
+      let [r, g, b] = colorAt(Math.pow((v - lo) / (hi - lo), 0.7));
+      const bnd = band(v);
+      const edge = (px + 1 < PW && band(vals[k + 1]) !== bnd) || (py + 1 < PW && band(vals[k + PW]) !== bnd);
+      if (edge) { r *= 0.82; g *= 0.82; b *= 0.84; }
+      const o = k * 4; img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 255;
+    }
+    bg.getContext("2d").putImageData(img, 0, 0);
+    drawPlot();
+  }
+
+  const toPx = (x, y) => [(x + R) / (2 * R) * PW, (R - y) / (2 * R) * PW];
+
+  function drawPlot() {
+    if (!PW) return;
+    pctx.setLineDash([]);
+    pctx.drawImage(bg, 0, 0);
+    // 축
+    pctx.strokeStyle = "rgba(40,50,70,.25)"; pctx.lineWidth = 1 * dpr;
+    const [ox, oy] = toPx(0, 0);
+    pctx.beginPath(); pctx.moveTo(0, oy); pctx.lineTo(PW, oy); pctx.moveTo(ox, 0); pctx.lineTo(ox, PW); pctx.stroke();
+    pctx.fillStyle = "rgba(40,50,70,.55)"; pctx.font = `${11 * dpr}px system-ui`;
+    for (const t of [-4, -2, 2, 4]) {
+      const [tx] = toPx(t, 0), [, ty] = toPx(0, t);
+      pctx.fillText(t, tx + 3 * dpr, oy - 4 * dpr);
+      pctx.fillText(t, ox + 4 * dpr, ty - 3 * dpr);
+    }
+    // 전역 최솟값
+    const gm = GMIN[state.fn], [gx, gy] = toPx(gm[0], gm[1]);
+    drawStar(gx, gy, 9 * dpr);
+    // 경로
+    for (const o of OPTS) {
+      if (!state.enabled[o.id]) continue;
+      const r = state.runs[o.id];
+      if (!r || r.path.length < 1) continue;
+      pctx.lineJoin = "round"; pctx.lineCap = "round";
+      const pts = r.path.map(q => toPx(q[0], q[1]));
+      // 흰 테두리
+      pctx.setLineDash([]);
+      pctx.strokeStyle = "rgba(255,255,255,.85)"; pctx.lineWidth = 5 * dpr;
+      tracePath(pts); pctx.stroke();
+      pctx.setLineDash(o.dash ? [6 * dpr, 5 * dpr] : []);
+      pctx.strokeStyle = o.color; pctx.lineWidth = 2.4 * dpr;
+      tracePath(pts); pctx.stroke();
+      pctx.setLineDash([]);
+      const last = pts[pts.length - 1];
+      pctx.beginPath(); pctx.arc(last[0], last[1], 5 * dpr, 0, Math.PI * 2);
+      pctx.fillStyle = o.color; pctx.fill();
+      pctx.lineWidth = 2 * dpr; pctx.strokeStyle = "#fff"; pctx.stroke();
+    }
+    // 출발점
+    const [sx, sy] = toPx(state.start[0], state.start[1]);
+    pctx.beginPath(); pctx.arc(sx, sy, 6 * dpr, 0, Math.PI * 2);
+    pctx.fillStyle = "#1c1d1f"; pctx.fill(); pctx.lineWidth = 2 * dpr; pctx.strokeStyle = "#fff"; pctx.stroke();
+  }
+
+  function tracePath(pts) {
+    pctx.beginPath();
+    pts.forEach((q, i) => i ? pctx.lineTo(q[0], q[1]) : pctx.moveTo(q[0], q[1]));
+  }
+
+  function drawStar(cx, cy, r) {
+    pctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+      pctx.lineTo(cx + rr * Math.cos(a), cy + rr * Math.sin(a));
+    }
+    pctx.closePath();
+    pctx.fillStyle = "#ffd23f"; pctx.fill();
+    pctx.lineWidth = 1.5 * dpr; pctx.strokeStyle = "#1c1d1f"; pctx.stroke();
+  }
+
+  // ---------- 손실 그래프 ----------
+  const loss = document.getElementById("loss");
+  const lctx = loss.getContext("2d");
+
+  function drawLoss() {
+    const rect = loss.getBoundingClientRect();
+    const W = Math.round(rect.width * dpr), H = Math.round(rect.height * dpr);
+    if (W <= 0) return;
+    if (loss.width !== W || loss.height !== H) { loss.width = W; loss.height = H; }
+    lctx.clearRect(0, 0, W, H);
+    const padL = 38 * dpr, padR = 8 * dpr, padT = 8 * dpr, padB = 20 * dpr;
+    const gm = GMIN[state.fn][2];
+    let ymax = gm + 1;
+    for (const o of OPTS) {
+      const r = state.runs[o.id];
+      if (state.enabled[o.id] && r) ymax = Math.max(ymax, r.fh[0]);
+    }
+    const ymin = Math.floor(gm) - 1; ymax = Math.ceil(ymax) + 1;
+    const X = i => padL + (W - padL - padR) * i / state.maxIter;
+    const Y = v => padT + (H - padT - padB) * (1 - (Math.max(ymin, Math.min(ymax, v)) - ymin) / (ymax - ymin));
+    // 격자
+    lctx.font = `${10 * dpr}px system-ui`; lctx.fillStyle = "#8a8e95"; lctx.strokeStyle = "#ececea"; lctx.lineWidth = 1 * dpr;
+    const ticks = 4;
+    for (let i = 0; i <= ticks; i++) {
+      const v = ymin + (ymax - ymin) * i / ticks, y = Y(v);
+      lctx.beginPath(); lctx.moveTo(padL, y); lctx.lineTo(W - padR, y); lctx.stroke();
+      lctx.textAlign = "right"; lctx.fillText(v.toFixed(1), padL - 5 * dpr, y + 3 * dpr);
+    }
+    lctx.textAlign = "center";
+    for (const i of [0, state.maxIter / 2, state.maxIter]) { lctx.textAlign = i === 0 ? "left" : i === state.maxIter ? "right" : "center"; lctx.fillText(i, X(i), H - 5 * dpr); }
+    // 전역 최솟값 기준선
+    lctx.setLineDash([3 * dpr, 3 * dpr]); lctx.strokeStyle = "#c9a100";
+    lctx.beginPath(); lctx.moveTo(padL, Y(gm)); lctx.lineTo(W - padR, Y(gm)); lctx.stroke();
+    lctx.setLineDash([]);
+    // 선
+    for (const o of OPTS) {
+      const r = state.runs[o.id];
+      if (!state.enabled[o.id] || !r) continue;
+      lctx.setLineDash(o.dash ? [5 * dpr, 4 * dpr] : []);
+      lctx.strokeStyle = o.color; lctx.lineWidth = 1.8 * dpr;
+      lctx.beginPath();
+      r.fh.forEach((v, i) => i ? lctx.lineTo(X(i), Y(v)) : lctx.moveTo(X(i), Y(v)));
+      lctx.stroke();
+    }
+    lctx.setLineDash([]);
+  }
+
+  // ---------- 표 ----------
+  const tbody = document.getElementById("tbody");
+  const cells = {};
+  for (const o of OPTS) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><label class="name"><input type="checkbox" checked>
+        <span class="sw ${o.dash ? "dash" : ""}" style="background:${o.color};color:${o.color}"></span>${o.name}</label></td>
+      <td><input type="number" step="0.01" min="0.001" value="${o.lr}"></td>
+      <td class="fv"></td><td class="xy"></td><td><span class="st"></span></td>`;
+    tbody.appendChild(tr);
+    const [cb, lr] = tr.querySelectorAll("input");
+    cb.addEventListener("change", () => { state.enabled[o.id] = cb.checked; tr.classList.toggle("off", !cb.checked); redraw(); });
+    lr.addEventListener("change", () => {
+      const v = parseFloat(lr.value);
+      if (v > 0) { state.lrs[o.id] = v; resetRuns(); redraw(); }
+    });
+    cells[o.id] = { fv: tr.querySelector(".fv"), xy: tr.querySelector(".xy"), st: tr.querySelector(".st") };
+  }
+  const ST = { run: ["run", "진행 중"], ok: ["ok", "수렴"], bad: ["bad", "발산"], end: ["end", "최대 반복"] };
+
+  function updateTable() {
+    for (const o of OPTS) {
+      const r = state.runs[o.id], c = cells[o.id];
+      const last = r.path[r.path.length - 1];
+      c.fv.textContent = r.status === "bad" ? "—" : r.fh[r.fh.length - 1].toFixed(3);
+      c.xy.textContent = r.status === "bad" ? "—" : `(${last[0].toFixed(2)}, ${last[1].toFixed(2)})`;
+      const [cls, txt] = (state.iter === 0 && r.status === "run") ? ["run", "대기"] : ST[r.status];
+      c.st.className = "st " + cls; c.st.textContent = txt;
+    }
+    document.getElementById("iter").textContent = state.iter;
+    document.getElementById("start").textContent = `(${state.start[0].toFixed(2)}, ${state.start[1].toFixed(2)})`;
+    const gm = GMIN[state.fn];
+    document.getElementById("fnLabel").innerHTML =
+      `<b>${F().expr}</b> · 전역 최솟값 ≈ ${gm[2].toFixed(3)} at (${gm[0].toFixed(2)}, ${gm[1].toFixed(2)})`;
+  }
+
+  function redraw() { drawPlot(); drawLoss(); updateTable(); }
+
+  // ---------- 노트 ----------
+  const notes = document.getElementById("notes");
+  for (const o of OPTS) {
+    const d = document.createElement("div");
+    d.className = "card note";
+    d.innerHTML = `<h3><span class="sw ${o.dash ? "dash" : ""}" style="background:${o.color};color:${o.color}"></span>${o.name}</h3>
+      <code>${o.eq}</code><p>${o.desc}</p>`;
+    notes.appendChild(d);
+  }
+
+  // ---------- 컨트롤 ----------
+  const playBtn = document.getElementById("play");
+  let rafId = 0;
+  function setPlaying(v) {
+    state.playing = v;
+    state.acc = 0;
+    playBtn.textContent = v ? "❚❚ 정지" : "▶ 재생";
+    cancelAnimationFrame(rafId); // 정지→재생을 빠르게 눌러도 루프가 겹치지 않게
+    if (v) rafId = requestAnimationFrame(loop);
+  }
+  function loop() {
+    if (!state.playing) return;
+    // 속도 = 프레임당 스텝 수 (0.1이면 10프레임에 1스텝)
+    state.acc += state.speed;
+    let done = false;
+    while (state.acc >= 1) { state.acc -= 1; if (!stepAll()) { done = true; break; } }
+    redraw();
+    const alive = OPTS.some(o => state.runs[o.id].status === "run");
+    if (done || !alive || state.iter >= state.maxIter) { setPlaying(false); return; }
+    rafId = requestAnimationFrame(loop);
+  }
+  playBtn.addEventListener("click", () => {
+    if (!state.playing && (state.iter >= state.maxIter || !OPTS.some(o => state.runs[o.id].status === "run"))) resetRuns();
+    setPlaying(!state.playing);
+  });
+  document.getElementById("stepBtn").addEventListener("click", () => { setPlaying(false); stepAll(); redraw(); });
+  document.getElementById("reset").addEventListener("click", () => { setPlaying(false); resetRuns(); redraw(); });
+
+  document.querySelectorAll("#fn-seg button").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#fn-seg button").forEach(x => x.classList.toggle("on", x === b));
+    state.fn = b.dataset.fn; setPlaying(false); resetRuns(); renderTerrain(); redraw();
+  }));
+
+  const bindRange = (id, key, parse, after) => {
+    const el = document.getElementById(id), out = document.getElementById(id + "V");
+    el.addEventListener("input", () => { state[key] = parse(el.value); out.textContent = el.value; after && after(); });
+  };
+  bindRange("speed", "speed", v => parseFloat(v));
+  bindRange("maxIter", "maxIter", v => parseInt(v), () => { setPlaying(false); resetRuns(); redraw(); });
+  bindRange("wd", "wd", v => parseFloat(v), () => { setPlaying(false); resetRuns(); redraw(); });
+
+  plot.addEventListener("click", e => {
+    const rect = plot.getBoundingClientRect();
+    const x = -R + 2 * R * (e.clientX - rect.left) / rect.width;
+    const y = R - 2 * R * (e.clientY - rect.top) / rect.height;
+    state.start = [x, y];
+    setPlaying(false); resetRuns(); redraw();
+  });
+
+  new ResizeObserver(() => { renderTerrain(); drawLoss(); }).observe(plot);
+
+  resetRuns();
+  renderTerrain();
+  redraw();
+})();
+</script>
+</body>
+</html>

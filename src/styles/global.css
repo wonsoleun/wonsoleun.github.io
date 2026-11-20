@@ -979,3 +979,152 @@ html.dark .astro-code span {
     border: 1px solid #888888 !important;
     padding: 0.5rem 0.75rem;
 }
+/* =========================================================
+   Playground (src/pages/playground.astro)
+   카드 목록은 src/content/playground/*.md, 섹션은 src/config/playground.ts
+   ========================================================= */
+.pg-section {
+    margin-bottom: 2.5rem;
+}
+
+.pg-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.pg-section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+    margin: 0;
+}
+
+.pg-section-count {
+    font-size: 0.8rem;
+    color: var(--foreground);
+    opacity: 0.65;
+    white-space: nowrap;
+}
+
+.pg-section-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    align-self: center;
+}
+
+.pg-section-desc {
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: var(--foreground);
+    opacity: 0.75;
+    margin: 0.5rem 0 1.25rem;
+}
+
+.pg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.pg-card {
+    --pg-color: var(--accent);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--pg-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--surface);
+    color: var(--foreground);
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+a.pg-card:hover {
+    border-color: var(--pg-color);
+    transform: translateY(-2px);
+}
+
+a.pg-card:hover .pg-title {
+    color: var(--pg-color);
+}
+
+.pg-card-soon {
+    opacity: 0.6;
+}
+
+.pg-thumb {
+    position: relative;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--foreground) 4%, var(--background));
+    border-bottom: 1px solid var(--border);
+}
+
+.pg-thumb img {
+    height: 104px;
+    width: auto;
+    max-width: 85%;
+    border: 0;
+    margin: 0;
+}
+
+.pg-thumb-fallback {
+    font-size: 2.5rem;
+    font-weight: 500;
+    color: var(--pg-color);
+    opacity: 0.6;
+}
+
+.pg-soon-badge {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--background);
+}
+
+.pg-body {
+    padding: 1rem 1.1rem 1.2rem;
+}
+
+.pg-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+}
+
+.pg-tag {
+    font-size: 0.72rem;
+    padding: 0.15rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--foreground);
+    opacity: 0.8;
+}
+
+.pg-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.4rem;
+    transition: color 0.2s ease;
+}
+
+.pg-desc {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    opacity: 0.8;
+    margin: 0;
+}

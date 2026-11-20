@@ -31,6 +31,11 @@ export const PAGES: PagesConfig = {
         subtitle: "Academic courses and educational materials.",
         isActive: false,
     },
+    playground: {
+        title: "Playground",
+        subtitle: "브라우저에서 바로 돌려보는 인터랙티브 ML 데모 모음. 값을 바꾸면서 개념을 직접 느껴 보세요.",
+        isActive: true,
+    },
     tags: {
         title: "Tags",
         subtitle: "Explore content by topic.",

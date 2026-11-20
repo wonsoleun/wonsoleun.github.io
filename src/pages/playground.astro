@@ -1,0 +1,84 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { PAGES, PLAYGROUND_SECTIONS } from "../config";
+
+if (PAGES.playground?.isActive === false) {
+    return Astro.redirect("/404");
+}
+
+const demos = (await getCollection("playground")).sort(
+    (a, b) => (a.data.order ?? 999) - (b.data.order ?? 999) || a.data.title.localeCompare(b.data.title),
+);
+
+// config에 없는 section 값은 "More" 섹션으로 모아요
+const known = new Set(PLAYGROUND_SECTIONS.map((s) => s.id));
+const sections = [
+    ...PLAYGROUND_SECTIONS,
+    ...(demos.some((d) => !known.has(d.data.section)) ? [{ id: "__other", title: "More" }] : []),
+]
+    .map((s) => ({
+        ...s,
+        items: demos.filter((d) => (s.id === "__other" ? !known.has(d.data.section) : d.data.section === s.id)),
+    }))
+    .filter((s) => s.items.length > 0);
+---
+
+<BaseLayout title={PAGES.playground.title} description={PAGES.playground.subtitle}>
+    <header class="page-header">
+        <h1 class="page-title">{PAGES.playground.title}</h1>
+        {PAGES.playground.subtitle && <p class="page-subtitle">{PAGES.playground.subtitle}</p>}
+    </header>
+
+    {sections.map((section) => {
+        const live = section.items.filter((d) => d.data.status === "live").length;
+        const soon = section.items.length - live;
+        return (
+            <section class="pg-section">
+                <div class="pg-section-head">
+                    <h2 class="pg-section-title">{section.title}</h2>
+                    <span class="pg-section-count mono">
+                        {live} live{soon > 0 && ` · ${soon} soon`}
+                    </span>
+                    <span class="pg-section-rule" />
+                </div>
+                {section.description && <p class="pg-section-desc">{section.description}</p>}
+
+                <div class="pg-grid">
+                    {section.items.map((demo) => {
+                        const d = demo.data;
+                        const isLive = d.status === "live" && d.href;
+                        const Tag = isLive ? "a" : "div";
+                        return (
+                            <Tag
+                                class={`pg-card ${isLive ? "" : "pg-card-soon"}`}
+                                href={isLive ? d.href : undefined}
+                                style={d.color ? `--pg-color: ${d.color}` : undefined}
+                            >
+                                <div class="pg-thumb">
+                                    {d.thumbnail ? (
+                                        <img src={d.thumbnail} alt="" loading="lazy" />
+                                    ) : (
+                                        <span class="pg-thumb-fallback mono">{d.title.slice(0, 1)}</span>
+                                    )}
+                                    {!isLive && <span class="pg-soon-badge mono">Coming soon</span>}
+                                </div>
+                                <div class="pg-body">
+                                    {d.tags && d.tags.length > 0 && (
+                                        <ul class="pg-tags">
+                                            {d.tags.map((t) => <li class="pg-tag mono">{t}</li>)}
+                                        </ul>
+                                    )}
+                                    <h3 class="pg-title">{d.title}</h3>
+                                    <p class="pg-desc">{d.description}</p>
+                                </div>
+                            </Tag>
+                        );
+                    })}
+                </div>
+            </section>
+        );
+    })}
+
+    {sections.length === 0 && <p class="body">아직 등록된 데모가 없어요.</p>}
+</BaseLayout>

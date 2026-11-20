@@ -87,6 +87,23 @@ const projectPosts = defineCollection({
     }),
 });
 
+// Playground 데모 카드 (예: src/content/playground/optimizer.md)
+// md 파일 하나 = 카드 하나. section 값으로 src/config/playground.ts의 섹션에 묶임.
+const playground = defineCollection({
+    loader: glob({ pattern: "**/*.md", base: "./src/content/playground" }),
+    schema: z.object({
+        title: z.string(),
+        description: z.string(),
+        section: z.string(),
+        tags: z.array(z.string()).optional(),
+        href: z.string().optional(),          // 데모 주소 (public/playground/...)
+        thumbnail: z.string().optional(),     // 카드 상단 그림 (public/ 기준 경로)
+        color: z.string().optional(),         // 카드 상단 선 색 (없으면 테마 accent)
+        status: z.enum(["live", "soon"]).default("live"),
+        order: z.number().optional(),
+    }),
+});
+
 const cv = defineCollection({
     loader: glob({ pattern: "cv.md", base: "./src/content" }),
     schema: z.object({
@@ -117,4 +134,5 @@ export const collections = {
     'projectPosts': projectPosts,
     'cv': cv,
     'teaching': teaching,
+    'playground': playground,
 };
