@@ -95,7 +95,7 @@
       <label>Layers L <input type="range" id="lSlider" min="1" max="6" value="3"> <b class="mono" id="lVal">3</b></label>
       <label>Channels C <input type="range" id="rfC" min="16" max="512" step="16" value="64"> <b class="mono" id="rfCV">64</b></label>
     </div>
-    <p class="note-arch" style="margin-bottom:8px">Hover over or tap the output grid on the far right to see which input region that output cell sees.
+    <p class="note-arch" style="margin-bottom:8px">Hover over the output grid on the far right to see which input region that output cell sees.
        Darker cells have more paths leading to the output. All layers use stride 1 and same padding.</p>
     <div class="rf-row"><div class="rf-title" id="titleA"></div><svg class="rf-svg" id="rfA"></svg></div>
     <div class="rf-row"><div class="rf-title" id="titleB"></div><svg class="rf-svg" id="rfB"></svg></div>
@@ -154,7 +154,7 @@
 
   // ================= Receptive field =================
   const CS = 10, GAP = 40, LBL = 22;
-  let K = 3, LN = 3, N = 13, sel = [6, 6];
+  let K = 3, LN = 3, N = 13, sel = [6, 6], pinned = false;
   const rfOf = (k, l) => l * (k - 1) + 1;
 
   function pathCounts(k, layers) {
@@ -210,12 +210,14 @@
     let a = "";
     for (let k = 0; k < LN; k++) a += connector(A[k], xs[k], A[k + 1], xs[k + 1]);
     for (let k = 0; k <= LN; k++) a += gridSVG(A[k], xs[k], k === 0 ? "Input" : k === LN ? `Output (Conv${LN})` : `Conv${k} ${K}×${K}`, k === LN);
-    svgA.innerHTML = a;
     const B = pathCounts(R, 1);
     let b = connector(B[0], xs[0], B[1], xs[LN]);
     b += gridSVG(B[0], xs[0], "Input", false) + gridSVG(B[1], xs[LN], `Output (Conv ${R}×${R})`, true);
     if (LN > 1) b += `<text x="${(xs[0] + GW + xs[LN]) / 2}" y="${GW / 2}" text-anchor="middle" font-size="${FS}" fill="#8a8e95">${R}×${R} in one step</text>`;
-    svgB.innerHTML = b;
+    // outline the pinned output cell
+    const pin = pinned ? `<rect x="${xs[LN] + sel[1] * CS - 0.5}" y="${sel[0] * CS - 0.5}" width="${CS + 1}" height="${CS + 1}" rx="2" fill="none" stroke="#1c1d1f" stroke-width="1.8"/>` : "";
+    svgA.innerHTML = a + pin;
+    svgB.innerHTML = b + pin;
 
     // input weighting: center (max) vs edge (min, excluding 0); may be clipped if the selected cell is near the border
     const inp = A[0].flat().filter(v => v > 0);
@@ -251,21 +253,35 @@
 
   function rebuild() {
     const R = rfOf(K, LN);
+    // keep a pinned cell at the same offset from the center when the grid size changes
+    const off = [sel[0] - (N - 1) / 2, sel[1] - (N - 1) / 2];
     N = Math.max(9, R + 6); if (N % 2 === 0) N++;
-    sel = [(N - 1) / 2, (N - 1) / 2];
+    const c = (N - 1) / 2;
+    sel = pinned ? off.map(o => Math.max(0, Math.min(N - 1, c + o))) : [c, c];
     layout(); drawRF(); drawStats();
   }
 
-  function onMove(e) {
+  // output cell under the pointer, or null if outside the output grid
+  function cellAt(e) {
     const svg = e.currentTarget, r = svg.getBoundingClientRect();
-    const pt = e.touches ? e.touches[0] : e;
     const vb = svg.viewBox.baseVal;
-    const x = (pt.clientX - r.left) / r.width * vb.width, y = (pt.clientY - r.top) / r.height * vb.height;
-    if (x < xs[LN] || x > xs[LN] + GW || y > GW) return;
-    const j = Math.floor((x - xs[LN]) / CS), i = Math.floor(y / CS);
-    if (i !== sel[0] || j !== sel[1]) { sel = [i, j]; drawRF(); }
+    const x = (e.clientX - r.left) / r.width * vb.width, y = (e.clientY - r.top) / r.height * vb.height;
+    if (x < xs[LN] || x > xs[LN] + GW || y < 0 || y > GW) return null;
+    return [Math.min(N - 1, Math.floor(y / CS)), Math.min(N - 1, Math.floor((x - xs[LN]) / CS))];
   }
-  [svgA, svgB].forEach(s => { s.addEventListener("mousemove", onMove); s.addEventListener("touchstart", onMove, { passive: true }); s.addEventListener("click", onMove); });
+  // hover previews while unpinned; click pins, clicking the pinned cell again unpins
+  function onMove(e) {
+    if (pinned) return;
+    const c = cellAt(e);
+    if (c && (c[0] !== sel[0] || c[1] !== sel[1])) { sel = c; drawRF(); }
+  }
+  function onClick(e) {
+    const c = cellAt(e); if (!c) return;
+    if (pinned && c[0] === sel[0] && c[1] === sel[1]) pinned = false;
+    else { pinned = true; sel = c; }
+    drawRF();
+  }
+  [svgA, svgB].forEach(s => { s.addEventListener("mousemove", onMove); s.addEventListener("click", onClick); });
   document.getElementById("kSeg").onclick = e => {
     const b = e.target.closest("button"); if (!b) return;
     K = +b.dataset.k; document.querySelectorAll("#kSeg button").forEach(x => x.classList.toggle("on", x === b)); rebuild();
