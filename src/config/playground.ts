@@ -10,6 +10,6 @@ export const PLAYGROUND_SECTIONS: PlaygroundSection[] = [
     {
         id: "optimization",
         title: "Concepts of Machine · Deep Learning",
-        description: "Training dynamics and generalization, hands-on — optimizers, loss landscapes, learning rates, overfitting, and regularization.",
+        description: "How models train, how they are built, and how they generalize, hands-on — optimizers, loss landscapes, CNN architectures, receptive fields, overfitting, and regularization.",
     },
 ];

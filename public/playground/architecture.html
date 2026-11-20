@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture Blocks</title>
+<meta name="description" content="An interactive demo that stacks AlexNet, VGG, and ResNet as blocks and shows each layer's output shape, parameter count, and compute">
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --ink: #1c1d1f; --muted: #6b6f76; --line: #e4e4e0; --accent: #2f5d8a;
+    --c-input: #1c1d1f; --c-conv: #2f6fd6; --c-pool: #13906a; --c-fc: #7c4ddb; --c-norm: #8a8e95;
+    --c-act: #e08a00; --c-drop: #b3ad9f; --c-flat: #6b6f76; --c-soft: #c93d8f; --c-res: #e08a00;
+    --radius: 14px;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  main { max-width: 1160px; margin: 0 auto; padding: 32px 20px 56px; }
+  .back { display: block; font-size: .85rem; color: var(--muted); text-decoration: none; margin-bottom: 14px; }
+  .back:hover { color: var(--accent); }
+  .tag { display: inline-block; font-size: .75rem; font-weight: 600; color: var(--accent); background: #e8eef5; padding: 2px 8px; border-radius: 99px; margin-bottom: 10px; }
+  header h1 { font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--muted); max-width: 780px; }
+  .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; margin-top: 24px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .side { position: static !important; } }
+  .card { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .side { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* block stack */
+  .stack { display: flex; flex-direction: column; gap: 6px; padding-right: 34px; }
+  .flow { text-align: center; color: #c3c6cb; font-size: .7rem; line-height: 1; margin: -2px 0; user-select: none; }
+  .blk { position: relative; display: grid; grid-template-columns: 1fr auto 64px; align-items: center; gap: 10px;
+         background: #fff; border: 1px solid var(--line); border-left: 6px solid var(--k); border-radius: 9px;
+         padding: 9px 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .blk:hover { background: #fafaf8; }
+  .blk.sel { border-color: var(--k); box-shadow: 0 0 0 2px color-mix(in srgb, var(--k) 25%, transparent); }
+  .blk.err { border-color: #d6404a; background: #fdf3f3; }
+  .blk .nm { font-weight: 700; font-size: .92rem; }
+  .blk .hp { font-size: .76rem; color: var(--muted); margin-top: 1px; }
+  .blk .out { font-size: .8rem; text-align: right; white-space: nowrap; }
+  .blk .out small { display: block; color: var(--muted); font-size: .7rem; }
+  .blk .bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--k); opacity: .35; border-radius: 0 2px 0 0; }
+  .blk .cube { width: 64px; height: 48px; display: flex; align-items: center; justify-content: center; }
+  .blk.minor { grid-template-columns: 1fr auto; padding: 4px 12px; border-left-width: 4px; background: #fcfcfb; }
+  .blk.minor .nm { font-weight: 600; font-size: .8rem; color: #4a4d52; }
+  .blk.minor .out { font-size: .72rem; color: var(--muted); }
+  .blk.minor .cube { display: none; }
+
+  .res { position: relative; border: 1.5px dashed color-mix(in srgb, var(--c-res) 55%, transparent); border-radius: 11px;
+         padding: 28px 8px 8px; margin: 2px 0; background: color-mix(in srgb, var(--c-res) 4%, #fff); cursor: pointer; }
+  .res.sel { border-style: solid; }
+  .res > .res-h { position: absolute; top: 6px; left: 12px; font-size: .76rem; font-weight: 700; color: #8a5300; }
+  .res > .res-h span { font-weight: 500; color: var(--muted); }
+  .res .inner { display: flex; flex-direction: column; gap: 5px; }
+  .res::after { content: ""; position: absolute; right: -26px; top: 14px; bottom: 22px; width: 18px;
+                border: 2px solid var(--c-res); border-left: 0; border-radius: 0 10px 10px 0; }
+  .res .plus { position: absolute; right: -36px; bottom: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--c-res);
+               color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: .9rem; }
+  .res .skip-lbl { position: absolute; right: -32px; top: 50%; transform: translateY(-50%) rotate(90deg); font-size: .66rem;
+                   color: #8a5300; white-space: nowrap; transform-origin: center; width: 0; display: flex; justify-content: center; }
+  .res.collapsed { padding: 0; border: 0; background: transparent; }
+  .res.collapsed .blk { border-left-color: var(--c-res); }
+
+  .stage { font-size: .74rem; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase;
+           margin: 10px 0 2px; display: flex; align-items: center; gap: 8px; }
+  .stage::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+
+  /* side panel */
+  .row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+  select, input[type=number] { font: inherit; font-size: .86rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  input[type=number] { width: 70px; }
+  label.inline { display: inline-flex; align-items: center; gap: 6px; font-size: .84rem; color: var(--muted); }
+  .btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 11px; font: inherit; font-size: .84rem; cursor: pointer; }
+  .btn.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .sub { font-size: .74rem; font-weight: 700; color: var(--muted); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat { background: #f6f6f3; border-radius: 9px; padding: 8px 10px; }
+  .stat b { display: block; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .74rem; color: var(--muted); }
+  .detail h3 { margin: 0 0 2px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .detail .sw { width: 10px; height: 10px; border-radius: 3px; background: var(--k); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: .84rem; margin-top: 8px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .formula { font-size: .78rem; background: #f4f4f1; border-radius: 7px; padding: 7px 9px; margin-top: 8px; color: #33363b; white-space: pre-wrap; }
+  .hint { font-size: .78rem; color: var(--muted); margin: 8px 0 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: .74rem; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+  .note-arch { font-size: .82rem; color: var(--muted); margin: 0 0 12px; }
+
+  h2 { font-size: 1.15rem; margin: 36px 0 12px; letter-spacing: -0.01em; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .note h3 { margin: 0 0 4px; font-size: .95rem; }
+  .note code { display: block; font-family: "JetBrains Mono", Consolas, monospace; font-size: .78rem; background: #f4f4f1; padding: 7px 9px; border-radius: 7px; margin: 6px 0; white-space: pre-wrap; }
+  .note p { margin: 0; font-size: .85rem; color: var(--muted); }
+
+  footer { margin-top: 40px; font-size: .78rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a class="back" href="/playground">← Playground</a>
+    <span class="tag">Playground · Architectures</span>
+    <h1>Architecture Blocks</h1>
+    <p>See CNN architectures as stacked blocks. Watch how the tensor shrinks spatially and grows in channels layer by layer,
+       and where the parameters and compute are concentrated. Click a block to see how its numbers are calculated.</p>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <p class="note-arch" id="archNote"></p>
+      <div class="stack" id="stack"></div>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <div class="sub">Architecture</div>
+        <div class="row">
+          <select id="preset"></select>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label class="inline">Input C×H×W
+            <input type="number" id="inC" min="1"> <input type="number" id="inH" min="1"> <input type="number" id="inW" min="1"></label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label class="inline"><input type="checkbox" id="hideMinor"> Hide ReLU · BN · Dropout</label>
+          <label class="inline" id="collapseWrap"><input type="checkbox" id="collapse"> Collapse residual blocks</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sub">Summary</div>
+        <div class="stats">
+          <div class="stat"><b id="sParams">–</b><span>Parameters</span></div>
+          <div class="stat"><b id="sMacs">–</b><span>Compute (MACs)</span></div>
+          <div class="stat"><b id="sDepth">–</b><span>Depth (Conv + FC layers)</span></div>
+          <div class="stat"><b id="sOut">–</b><span>Final output</span></div>
+        </div>
+        <p class="hint" id="sShare"></p>
+        <p class="hint">The bar under each block shows its share of the total parameters.</p>
+      </div>
+
+      <div class="card detail" id="detail"></div>
+
+      <div class="legend" id="legend"></div>
+    </aside>
+  </div>
+
+  <footer>Plain JavaScript, no external libraries · Parameter counts follow each paper / torchvision config (AlexNet as a single path, without the GPU split) · Made by SOL</footer>
+</main>
+
+<script>
+(() => {
+  // ---------- Layer kinds ----------
+  const KIND = {
+    input:   { label: "Input",       color: "var(--c-input)" },
+    conv:    { label: "Conv",        color: "var(--c-conv)" },
+    pool:    { label: "Pool",        color: "var(--c-pool)" },
+    gap:     { label: "Global AvgPool", color: "var(--c-pool)" },
+    fc:      { label: "FC",          color: "var(--c-fc)" },
+    relu:    { label: "ReLU",        color: "var(--c-act)", minor: true },
+    tanh:    { label: "Tanh",        color: "var(--c-act)", minor: true },
+    bn:      { label: "BatchNorm",   color: "var(--c-norm)", minor: true },
+    lrn:     { label: "LRN",         color: "var(--c-norm)", minor: true },
+    dropout: { label: "Dropout",     color: "var(--c-drop)", minor: true },
+    flatten: { label: "Flatten",     color: "var(--c-flat)", minor: true },
+    softmax: { label: "Softmax",     color: "var(--c-soft)", minor: true },
+    res:     { label: "Residual",    color: "var(--c-res)" },
+    stage:   { label: "Stage",       color: "var(--muted)" }
+  };
+
+  let uid = 0;
+  const L = (t, o = {}) => ({ id: ++uid, t, ...o });
+  const conv = (out, k, s = 1, p = 0, bias = true) => L("conv", { out, k, s, p, bias });
+  const pool = (k, s, p = 0, mode = "max") => L("pool", { k, s, p, mode });
+  const fc = out => L("fc", { out });
+
+  // ---------- Presets ----------
+  function alexnet() { return [
+    L("input"),
+    L("stage", { name: "Feature extractor" }),
+    conv(96, 11, 4, 0), L("relu"), L("lrn"), pool(3, 2),
+    conv(256, 5, 1, 2), L("relu"), L("lrn"), pool(3, 2),
+    conv(384, 3, 1, 1), L("relu"),
+    conv(384, 3, 1, 1), L("relu"),
+    conv(256, 3, 1, 1), L("relu"), pool(3, 2),
+    L("stage", { name: "Classifier" }),
+    L("flatten"), L("dropout", { p: 0.5 }), fc(4096), L("relu"), L("dropout", { p: 0.5 }), fc(4096), L("relu"), fc(1000), L("softmax") ]; }
+
+  function vgg16() {
+    const a = [L("input")];
+    [[64, 2], [128, 2], [256, 3], [512, 3], [512, 3]].forEach(([c, n], i) => {
+      a.push(L("stage", { name: `Block ${i + 1}` }));
+      for (let j = 0; j < n; j++) a.push(conv(c, 3, 1, 1), L("relu"));
+      a.push(pool(2, 2));
+    });
+    a.push(L("stage", { name: "Classifier" }), L("flatten"), fc(4096), L("relu"), L("dropout", { p: 0.5 }), fc(4096), L("relu"), L("dropout", { p: 0.5 }), fc(1000), L("softmax"));
+    return a;
+  }
+
+  function resnet(blocks, bottleneck) {
+    const a = [L("input"), L("stage", { name: "Stem" }), conv(64, 7, 2, 3, false), L("bn"), L("relu"), pool(3, 2, 1)];
+    [64, 128, 256, 512].forEach((c, i) => {
+      a.push(L("stage", { name: `conv${i + 2}_x` }));
+      for (let j = 0; j < blocks[i]; j++) {
+        const s = i > 0 && j === 0 ? 2 : 1;
+        const body = bottleneck
+          ? [conv(c, 1, 1, 0, false), L("bn"), L("relu"), conv(c, 3, s, 1, false), L("bn"), L("relu"), conv(4 * c, 1, 1, 0, false), L("bn")]
+          : [conv(c, 3, s, 1, false), L("bn"), L("relu"), conv(c, 3, 1, 1, false), L("bn")];
+        a.push(L("res", { name: `${bottleneck ? "Bottleneck" : "Basic"} block`, kind: bottleneck ? "bottleneck" : "basic", body }));
+      }
+    });
+    a.push(L("stage", { name: "Head" }), L("gap"), fc(1000), L("softmax"));
+    return a;
+  }
+
+  const PRESETS = {
+    alexnet:  { name: "AlexNet (2012)",          input: [3, 227, 227], build: alexnet,
+                note: "ReLU, Dropout, LRN, and a large-stride first Conv. About 94% of the parameters sit in the three FC layers." },
+    vgg16:    { name: "VGG-16 (2014)",           input: [3, 224, 224], build: vgg16,
+                note: "A simple design that stacks only 3×3 Convs. Each time the spatial size halves, the channels double." },
+    resnet18: { name: "ResNet-18 (2015)",        input: [3, 224, 224], build: () => resnet([2, 2, 2, 2], false),
+                note: "Basic blocks (two 3×3 Convs) + skip connections. Global AvgPool replaces the big FC layers, cutting parameters sharply." },
+    resnet50: { name: "ResNet-50 (2015)",        input: [3, 224, 224], build: () => resnet([3, 4, 6, 3], true),
+                note: "Bottleneck blocks (1×1 → 3×3 → 1×1) shrink and then restore the channels, keeping compute in check as the network gets deeper." }
+
+  };
+
+  // ---------- State ----------
+  const S = { preset: "alexnet", arch: [], input: [3, 227, 227], sel: null, hideMinor: false, collapse: false, rows: null };
+
+  // ---------- Shape computation ----------
+  const outSize = (n, k, s, p) => Math.floor((n + 2 * p - k) / s) + 1;
+  const shapeStr = sh => !sh ? "?" : sh.n !== undefined ? `${sh.n}` : `${sh.c}×${sh.h}×${sh.w}`;
+  const numel = sh => sh.n !== undefined ? sh.n : sh.c * sh.h * sh.w;
+
+  function apply(l, x) {
+    // returns: { y, params, macs, err, note, formula }
+    const r = { y: null, params: 0, macs: 0, err: null, note: "", formula: "" };
+    if (!x) { r.err = "Error in a previous layer"; return r; }
+    const sp = x.n === undefined;
+    switch (l.t) {
+      case "input": r.y = { c: S.input[0], h: S.input[1], w: S.input[2] }; break;
+      case "conv": {
+        if (!sp) { r.err = "Conv needs a C×H×W input (it can't come after Flatten)"; return r; }
+        const h = outSize(x.h, l.k, l.s, l.p), w = outSize(x.w, l.k, l.s, l.p);
+        if (h < 1 || w < 1) { r.err = `Output size would be ${h}×${w}: the kernel is larger than the input.`; return r; }
+        r.y = { c: l.out, h, w };
+        r.params = l.k * l.k * x.c * l.out + (l.bias ? l.out : 0);
+        r.macs = l.k * l.k * x.c * l.out * h * w;
+        r.formula = `H_out = ⌊(${x.h} + 2·${l.p} − ${l.k}) / ${l.s}⌋ + 1 = ${h}\nParams = ${l.k}·${l.k}·${x.c}·${l.out}${l.bias ? ` + ${l.out}` : ""} = ${fmtInt(r.params)}\nMACs = ${l.k}·${l.k}·${x.c}·${l.out}·${h}·${w} = ${fmt(r.macs)}`;
+        if ((x.h + 2 * l.p - l.k) % l.s) r.note = "Not evenly divisible, so the result was rounded down.";
+        break;
+      }
+      case "pool": {
+        if (!sp) { r.err = "Pool needs a C×H×W input"; return r; }
+        const h = outSize(x.h, l.k, l.s, l.p), w = outSize(x.w, l.k, l.s, l.p);
+        if (h < 1 || w < 1) { r.err = `Output size would be ${h}×${w}.`; return r; }
+        r.y = { c: x.c, h, w };
+        r.formula = `H_out = ⌊(${x.h} + 2·${l.p} − ${l.k}) / ${l.s}⌋ + 1 = ${h}\nChannels unchanged, 0 params`;
+        break;
+      }
+      case "gap":
+        if (!sp) { r.err = "Global AvgPool needs a C×H×W input"; return r; }
+        r.y = { n: x.c }; r.formula = `${x.c}×${x.h}×${x.w} → average per channel → ${x.c}`; break;
+      case "flatten":
+        r.y = { n: numel(x) }; r.formula = sp ? `${x.c}·${x.h}·${x.w} = ${fmtInt(numel(x))}` : "Already 1-D"; break;
+      case "fc": {
+        const nin = numel(x);
+        if (sp) r.note = "The C×H×W input was flattened automatically.";
+        r.y = { n: l.out };
+        r.params = nin * l.out + l.out; r.macs = nin * l.out;
+        r.formula = `Params = ${fmtInt(nin)}·${l.out} + ${l.out} = ${fmtInt(r.params)}`;
+        break;
+      }
+      case "bn":
+        r.y = x; r.params = 2 * (sp ? x.c : x.n);
+        r.formula = `Learns γ, β per channel → 2·${sp ? x.c : x.n} = ${r.params}`; break;
+      case "res": {
+        let h = x, p = 0, m = 0, err = null;
+        l._inner = [];
+        for (const b of l.body) { const q = apply(b, h); l._inner.push({ l: b, x: h, ...q }); if (q.err) { err = q.err; break; } h = q.y; p += q.params; m += q.macs; }
+        if (err) { r.err = "Error inside block: " + err; return r; }
+        const same = h.c === x.c && h.h === x.h && h.w === x.w;
+        l._proj = !same;
+        if (!same) {
+          const s = Math.round(x.h / h.h) || 1;
+          const pp = x.c * h.c + 2 * h.c; p += pp; m += x.c * h.c * h.h * h.w;
+          r.formula = `F(x): ${shapeStr(x)} → ${shapeStr(h)}\nshortcut: 1×1 Conv(stride ${s}) + BN, ${fmtInt(pp)} params\ny = ReLU(F(x) + W_s·x)`;
+        } else r.formula = `F(x): ${shapeStr(x)} → ${shapeStr(h)}\nshortcut: identity (0 params)\ny = ReLU(F(x) + x)`;
+        r.y = h; r.params = p; r.macs = m; break;
+      }
+      case "stage": r.y = x; break;
+      default: r.y = x;
+    }
+    return r;
+  }
+
+  function compute() {
+    let x = { c: 0, h: 0, w: 0 };
+    const rows = [];
+    let total = 0, macs = 0, depth = 0, fcParams = 0, convMacs = 0;
+    for (const l of S.arch) {
+      const r = apply(l, x);
+      rows.push({ l, x, ...r });
+      if (!r.err) x = r.y; else x = null;
+      total += r.params; macs += r.macs;
+      if (l.t === "conv") { depth++; convMacs += r.macs; }
+      if (l.t === "fc") { depth++; fcParams += r.params; }
+      if (l.t === "res") { depth += l.body.filter(b => b.t === "conv").length; convMacs += r.macs; }
+    }
+    return { rows, total, macs, depth, out: x, fcParams, convMacs };
+  }
+
+  // ---------- Formatting ----------
+  function fmt(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + "G";
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+    return String(n);
+  }
+  const fmtInt = n => n.toLocaleString("en-US");
+
+  function hpText(l) {
+    switch (l.t) {
+      case "conv": return `${l.k}×${l.k}, ${l.out}, stride ${l.s}, pad ${l.p}${l.bias ? "" : ", no bias"}`;
+      case "pool": return `${l.mode} ${l.k}×${l.k}, stride ${l.s}${l.p ? `, pad ${l.p}` : ""}`;
+      case "fc": return `→ ${l.out}`;
+      case "dropout": return `p = ${l.p ?? 0.5}`;
+      case "input": return "image";
+      case "res": return l.body.filter(b => b.t === "conv").map(b => `${b.k}×${b.k}`).join(" → ") + (l._proj === undefined ? "" : l._proj ? " · projection" : " · identity");
+      default: return "";
+    }
+  }
+  const nameOf = l => l.t === "pool" ? (l.mode === "avg" ? "AvgPool" : "MaxPool") : l.t === "res" ? l.name : KIND[l.t].label;
+
+  // ---------- Mini tensor cube ----------
+  function cube(sh) {
+    if (!sh) return "";
+    if (sh.n !== undefined) {
+      const hgt = Math.min(44, 8 + Math.log2(sh.n + 1) * 3);
+      return `<svg width="64" height="48" viewBox="0 0 64 48"><rect x="29" y="${(48 - hgt) / 2}" width="6" height="${hgt}" rx="1.5" fill="#cdbff0" stroke="#7c4ddb" stroke-width="1"/></svg>`;
+    }
+    const s = Math.min(34, 6 + Math.log2(sh.h + 1) * 3.6);
+    const d = Math.min(22, 2 + Math.log2(sh.c + 1) * 2);
+    const ox = (64 - s - d * 0.8) / 2, oy = (48 - s - d * 0.6) / 2 + d * 0.6;
+    const dx = d * 0.8, dy = -d * 0.6;
+    return `<svg width="64" height="48" viewBox="0 0 64 48">
+      <polygon points="${ox},${oy} ${ox + dx},${oy + dy} ${ox + s + dx},${oy + dy} ${ox + s},${oy}" fill="#dbe6f7" stroke="#2f6fd6" stroke-width="1"/>
+      <polygon points="${ox + s},${oy} ${ox + s + dx},${oy + dy} ${ox + s + dx},${oy + s + dy} ${ox + s},${oy + s}" fill="#b9cdee" stroke="#2f6fd6" stroke-width="1"/>
+      <rect x="${ox}" y="${oy}" width="${s}" height="${s}" fill="#edf2fb" stroke="#2f6fd6" stroke-width="1"/></svg>`;
+  }
+
+  // ---------- Render ----------
+  const stackEl = document.getElementById("stack");
+
+  function blockHTML(row, share, top) {
+    const l = row.l, k = KIND[l.t], minor = k.minor;
+    const ctl = "";
+    const outTxt = row.err ? `<span style="color:#d6404a">Error</span>` : shapeStr(row.y);
+    const sub = !minor && row.params ? `<small>${fmt(row.params)} params</small>` : "";
+    return `<div class="blk ${minor ? "minor" : ""} ${S.sel === l.id ? "sel" : ""} ${row.err ? "err" : ""}" data-id="${l.id}" style="--k:${k.color}">
+      <div><div class="nm">${nameOf(l)}${ctl}</div>${!minor && hpText(l) ? `<div class="hp mono">${hpText(l)}</div>` : ""}</div>
+      <div class="out mono">${outTxt}${sub}</div>
+      <div class="cube">${row.err ? "" : cube(row.y)}</div>
+      ${share > 0.002 && !minor ? `<div class="bar" style="width:${Math.max(2, share * 100)}%"></div>` : ""}
+    </div>`;
+  }
+
+  function render() {
+    const R = S.rows = compute();
+    let html = "", first = true;
+    for (const row of R.rows) {
+      const l = row.l;
+      if (l.t === "stage") { html += `<div class="stage">${l.name}</div>`; continue; }
+      if (S.hideMinor && KIND[l.t].minor) continue;
+      if (!first) html += `<div class="flow">▼</div>`;
+      first = false;
+      const share = R.total ? row.params / R.total : 0;
+      if (l.t === "res") {
+        const tag = row.err ? "" : l._proj ? "projection shortcut" : "identity shortcut";
+        if (S.collapse) { html += `<div class="res collapsed">${blockHTML(row, share, true)}</div>`; continue; }
+        const ctl = "";
+        let inner = "", f2 = true;
+        for (const ir of (l._inner || [])) {
+          if (S.hideMinor && KIND[ir.l.t].minor) continue;
+          if (!f2) inner += `<div class="flow">▼</div>`; f2 = false;
+          inner += blockHTML(ir, R.total ? ir.params / R.total : 0, false);
+        }
+        html += `<div class="res ${S.sel === l.id ? "sel" : ""}" data-id="${l.id}">
+          <div class="res-h">${l.name} <span>· ${tag} · output ${shapeStr(row.y)} · ${fmt(row.params)} params</span>${ctl}</div>
+          <div class="inner">${inner}</div>
+          <div class="skip-lbl">${l._proj ? "1×1 conv" : "x"}</div><div class="plus">+</div>
+        </div>`;
+        continue;
+      }
+      html += blockHTML(row, share, true);
+    }
+    stackEl.innerHTML = html;
+
+    document.getElementById("sParams").textContent = fmt(R.total);
+    document.getElementById("sMacs").textContent = fmt(R.macs);
+    document.getElementById("sDepth").textContent = R.depth;
+    document.getElementById("sOut").textContent = R.out ? shapeStr(R.out) : "Error";
+    document.getElementById("sShare").textContent = R.total
+      ? `FC layers hold ${(R.fcParams / R.total * 100).toFixed(1)}% of the parameters; Conv layers account for ${(R.convMacs / Math.max(R.macs, 1) * 100).toFixed(1)}% of the compute.` : "";
+    document.getElementById("collapseWrap").style.display = S.arch.some(l => l.t === "res") ? "" : "none";
+    renderDetail();
+  }
+
+  // ---------- Detail ----------
+  function findRow(id) {
+    for (const r of S.rows.rows) {
+      if (r.l.id === id) return { row: r, top: true };
+      if (r.l.t === "res" && r.l._inner) for (const ir of r.l._inner) if (ir.l.id === id) return { row: ir, top: false };
+    }
+    return null;
+  }
+
+
+  function renderDetail() {
+    const el = document.getElementById("detail");
+    const f = S.sel != null ? findRow(S.sel) : null;
+    if (!f) {
+      el.innerHTML = `<div class="sub">Detail</div><p class="hint" style="margin:0">Click a block to see how its output shape and parameters are calculated.</p>`;
+      return;
+    }
+    const { row } = f, l = row.l, k = KIND[l.t];
+    el.innerHTML = `<div class="sub">Detail</div>
+      <h3 style="--k:${k.color}"><span class="sw"></span>${nameOf(l)}</h3>
+      ${hpText(l) ? `<div class="hp mono" style="font-size:.8rem;color:var(--muted)">${hpText(l)}</div>` : ""}
+      <dl class="kv">
+        <dt>Input</dt><dd class="mono">${l.t === "input" ? "–" : shapeStr(row.x)}</dd>
+        <dt>Output</dt><dd class="mono">${row.err ? "Error" : shapeStr(row.y)}</dd>
+        <dt>Params</dt><dd class="mono">${fmtInt(row.params)}</dd>
+        <dt>MACs</dt><dd class="mono">${fmt(row.macs)}</dd>
+      </dl>
+      ${row.err ? `<div class="formula" style="background:#fbe6e6;color:#9b2a2a">${row.err}</div>` : ""}
+      ${row.formula ? `<div class="formula mono">${row.formula}</div>` : ""}
+      ${row.note ? `<p class="hint">${row.note}</p>` : ""}`;
+  }
+
+  stackEl.addEventListener("click", e => {
+    const b = e.target.closest(".blk") || e.target.closest(".res");
+    if (!b) return;
+    e.stopPropagation();
+    S.sel = +b.dataset.id; render();
+  });
+
+
+  // ---------- Controls ----------
+  const presetEl = document.getElementById("preset");
+  presetEl.innerHTML = Object.entries(PRESETS).map(([k, p]) => `<option value="${k}">${p.name}</option>`).join("");
+  function loadPreset(key) {
+    S.preset = key; const p = PRESETS[key];
+    S.arch = p.build(); S.input = p.input.slice(); S.sel = null;
+    S.collapse = key === "resnet50"; document.getElementById("collapse").checked = S.collapse;
+    ["inC", "inH", "inW"].forEach((id, i) => document.getElementById(id).value = S.input[i]);
+    document.getElementById("archNote").textContent = p.note;
+    render();
+  }
+  presetEl.onchange = () => loadPreset(presetEl.value);
+  ["inC", "inH", "inW"].forEach((id, i) => document.getElementById(id).onchange = e => { S.input[i] = Math.max(1, parseInt(e.target.value) || 1); render(); });
+  document.getElementById("hideMinor").onchange = e => { S.hideMinor = e.target.checked; render(); };
+  document.getElementById("collapse").onchange = e => { S.collapse = e.target.checked; render(); };
+
+  document.getElementById("legend").innerHTML = [["conv", "Conv"], ["pool", "Pool"], ["fc", "FC"], ["act", "Activation"], ["norm", "Normalization"], ["res", "Residual"]]
+    .map(([c, t]) => `<span><i style="background:var(--c-${c})"></i>${t}</span>`).join("");
+
+  presetEl.value = "alexnet";
+  loadPreset("alexnet");
+})();
+</script>
+
+</body>
+</html>

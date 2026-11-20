@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" fill="none">
+  <polygon points="78,30 104,46 104,74 78,90" fill="#e08a00" opacity=".12"/>
+  <polygon points="140,46 152,54 152,66 140,74" fill="#e08a00" opacity=".12"/>
+  <rect x="18" y="30" width="60" height="60" rx="3" fill="#f1f1ee"/>
+  <rect x="18" y="30" width="60" height="60" rx="3" fill="#e08a00" opacity=".18"/>
+  <rect x="30" y="42" width="36" height="36" rx="2" fill="#e08a00" opacity=".35"/>
+  <rect x="42" y="54" width="12" height="12" rx="2" fill="#e08a00" opacity=".9"/>
+  <rect x="18" y="30" width="60" height="60" rx="3" stroke="#8a5300" stroke-width="1.4"/>
+  <rect x="104" y="46" width="36" height="28" rx="3" fill="#e08a00" opacity=".25"/>
+  <rect x="116" y="54" width="12" height="12" rx="2" fill="#e08a00" opacity=".75"/>
+  <rect x="104" y="46" width="36" height="28" rx="3" stroke="#8a5300" stroke-width="1.2"/>
+  <rect x="152" y="54" width="12" height="12" rx="2" fill="#e08a00"/>
+  <rect x="152" y="54" width="12" height="12" rx="2" stroke="#8a5300" stroke-width="1.2"/>
+  <g stroke="#94a3b8" stroke-width="1" opacity=".6">
+    <path d="M18 50 h60 M18 70 h60 M38 30 v60 M58 30 v60"/>
+  </g>
+</svg>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receptive Field &amp; 1×1 Conv</title>
+<meta name="description" content="An interactive demo showing how a CNN's receptive field grows with kernel size and depth, and how a 1×1 Conv mixes channels">
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --ink: #1c1d1f; --muted: #6b6f76; --line: #e4e4e0; --accent: #2f5d8a;
+    --c-input: #1c1d1f; --c-conv: #2f6fd6; --c-pool: #13906a; --c-fc: #7c4ddb; --c-norm: #8a8e95;
+    --c-act: #e08a00; --c-drop: #b3ad9f; --c-flat: #6b6f76; --c-soft: #c93d8f; --c-res: #e08a00;
+    --radius: 14px;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  main { max-width: 1160px; margin: 0 auto; padding: 32px 20px 56px; }
+  .back { display: block; font-size: .85rem; color: var(--muted); text-decoration: none; margin-bottom: 14px; }
+  .back:hover { color: var(--accent); }
+  .tag { display: inline-block; font-size: .75rem; font-weight: 600; color: var(--accent); background: #e8eef5; padding: 2px 8px; border-radius: 99px; margin-bottom: 10px; }
+  header h1 { font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--muted); max-width: 780px; }
+  .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; margin-top: 24px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .side { position: static !important; } }
+  .card { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .side { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+
+  .sub { font-size: .74rem; font-weight: 700; color: var(--muted); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+  .hint { font-size: .78rem; color: var(--muted); margin: 8px 0 0; }
+  .note-arch { font-size: .82rem; color: var(--muted); margin: 0 0 12px; }
+  h2 { font-size: 1.15rem; margin: 36px 0 12px; letter-spacing: -0.01em; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; padding: 6px 12px; font: inherit; font-size: .86rem; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: var(--ink); color: #fff; }
+  .card { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .note h3 { margin: 0 0 4px; font-size: .95rem; }
+  .note code { display: block; font-family: "JetBrains Mono", Consolas, monospace; font-size: .78rem; background: #f4f4f1; padding: 7px 9px; border-radius: 7px; margin: 6px 0; white-space: pre-wrap; }
+  .note p { margin: 0; font-size: .85rem; color: var(--muted); }
+  footer { margin-top: 40px; font-size: .78rem; color: var(--muted); }
+  .warn { font-size: .8rem; color: #8a5300; background: #fcf3e3; border-radius: 7px; padding: 6px 10px; margin-top: 8px; }
+  /* Receptive field & 1x1 */
+  .widget { margin-top: 12px; }
+  .rf-row { margin-bottom: 10px; }
+  .rf-title { font-size: .86rem; font-weight: 700; margin-bottom: 4px; display: flex; gap: 8px; align-items: baseline; }
+  .rf-title span { font-weight: 500; color: var(--muted); font-size: .78rem; }
+  .rf-svg { width: 100%; height: auto; display: block; cursor: crosshair; }
+  .cmp { width: 100%; border-collapse: collapse; font-size: .86rem; margin-top: 12px; }
+  .cmp th, .cmp td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; font-variant-numeric: tabular-nums; }
+  .cmp th { font-size: .76rem; color: var(--muted); font-weight: 600; }
+  .cmp td.win { color: #1d6b3c; font-weight: 700; }
+  .ctl-row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; font-size: .85rem; color: var(--muted); margin-top: 6px; }
+  .ctl-row input[type=range] { width: 120px; vertical-align: middle; }
+  .one-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; margin-top: 8px; }
+  .one-grid figure { margin: 0; }
+  .one-grid canvas { width: 100%; aspect-ratio: 1/1; image-rendering: pixelated; border-radius: 6px; border: 1px solid var(--line); display: block; cursor: crosshair; }
+  .one-grid figcaption { font-size: .76rem; color: var(--muted); margin-top: 4px; text-align: center; }
+  .wbox { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-top: 12px; }
+  .wcard { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .wcard h4 { margin: 0 0 6px; font-size: .86rem; }
+  .wcard label { display: grid; grid-template-columns: 22px 1fr 44px; align-items: center; gap: 6px; font-size: .8rem; color: var(--muted); }
+  .wcard input[type=range] { width: 100%; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .presets button { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 4px 9px; font: inherit; font-size: .78rem; cursor: pointer; }
+  .calc { font-size: .8rem; background: #f4f4f1; border-radius: 7px; padding: 8px 10px; margin-top: 12px; white-space: pre-wrap; color: #33363b; min-height: 2.6em; }
+  .bars { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .bar-row { display: grid; grid-template-columns: 170px 1fr 90px; gap: 8px; align-items: center; font-size: .8rem; }
+  .bar-row .track { background: #f1f1ee; border-radius: 5px; height: 14px; overflow: hidden; }
+  .bar-row .fill { height: 100%; border-radius: 5px; }
+  .bar-row .num { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 600px) { .bar-row { grid-template-columns: 110px 1fr 70px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a class="back" href="/playground">← Playground</a>
+    <span class="tag">Playground · Architectures</span>
+    <h1>Receptive Field &amp; 1×1 Conv</h1>
+    <p>Which part of the input does a single output cell of a Conv layer actually see? Change the kernel size and the number of layers to watch the receptive field grow,
+       then play with a 1×1 Conv, which ignores space entirely and only mixes channels.</p>
+  </header>
+
+  <h2>Receptive field: many small kernels vs one large kernel</h2>
+  <section class="card">
+    <div class="ctl-row" style="margin:0 0 10px">
+      <span>Kernel size k</span>
+      <div class="seg" id="kSeg">
+        <button data-k="1">1×1</button><button data-k="3" class="on">3×3</button><button data-k="5">5×5</button><button data-k="7">7×7</button>
+      </div>
+      <label>Layers L <input type="range" id="lSlider" min="1" max="6" value="3"> <b class="mono" id="lVal">3</b></label>
+      <label>Channels C <input type="range" id="rfC" min="16" max="512" step="16" value="64"> <b class="mono" id="rfCV">64</b></label>
+    </div>
+    <p class="note-arch" style="margin-bottom:8px">Hover over or tap the output grid on the far right to see which input region that output cell sees.
+       Darker cells have more paths leading to the output. All layers use stride 1 and same padding.</p>
+    <div class="rf-row"><div class="rf-title" id="titleA"></div><svg class="rf-svg" id="rfA"></svg></div>
+    <div class="rf-row"><div class="rf-title" id="titleB"></div><svg class="rf-svg" id="rfB"></svg></div>
+    <div id="rfWarn"></div>
+    <table class="cmp">
+      <thead><tr><th></th><th id="hA"></th><th id="hB"></th></tr></thead>
+      <tbody>
+        <tr><td>Receptive field</td><td class="mono" id="rfA1"></td><td class="mono" id="rfB1"></td></tr>
+        <tr><td>Parameters (excl. bias)</td><td class="mono" id="rfPA"></td><td class="mono" id="rfPB"></td></tr>
+        <tr><td>Nonlinearities (ReLU)</td><td id="rfRA"></td><td id="rfRB"></td></tr>
+        <tr><td>Input weighting (path count)</td><td id="rfWA"></td><td>Uniform across region</td></tr>
+      </tbody>
+    </table>
+    <p class="hint" id="rfHint"></p>
+  </section>
+
+  <h2>1×1 Conv: same space, mixed channels</h2>
+  <section class="card">
+    <p class="note-arch" style="margin-bottom:8px">A 1×1 Conv never looks at neighboring pixels. It just takes a weighted sum of one pixel's channel vector (R, G, B).
+       In other words, it is the same as <b>applying one FC layer (C_in → C_out) to every pixel</b>. Change the weights and watch the output channels respond.</p>
+    <div class="one-grid" id="oneGrid"></div>
+    <div class="wbox" id="wbox"></div>
+    <div class="calc mono" id="oneCalc">Hover over an image to see the calculation for that pixel.</div>
+
+    <div class="sub" style="margin-top:20px">Saving compute by shrinking channels: Bottleneck</div>
+    <div class="ctl-row">
+      <label>In/out channels C <input type="range" id="bnC" min="64" max="1024" step="64" value="256"> <b class="mono" id="bnCV">256</b></label>
+      <label>Middle channels C_mid <input type="range" id="bnM" min="16" max="512" step="16" value="64"> <b class="mono" id="bnMV">64</b></label>
+      <label>Spatial H×W <b class="mono">56×56</b></label>
+    </div>
+    <div class="bars" id="bnBars"></div>
+    <p class="hint" id="bnNote"></p>
+  </section>
+
+
+  <h2>Key takeaways</h2>
+  <div class="notes">
+    <div class="card note"><h3>Receptive field formula</h3>
+      <code>RF = L·(k − 1) + 1   (stride 1)</code>
+      <p>Stacking L k×k Convs widens the field by (k−1) per layer. Two 3×3 layers see the same region as one 5×5; three see the same as one 7×7.</p></div>
+    <div class="card note"><h3>Why stack small kernels</h3>
+      <code>3×3 × 3 layers: 27C²   vs   7×7 × 1 layer: 49C²</code>
+      <p>You cover the same region with fewer parameters, and the ReLUs between layers add expressive power. That is why VGG and most later CNNs default to 3×3.</p></div>
+    <div class="card note"><h3>Effective receptive field</h3>
+      <code>path count: center ≫ edge</code>
+      <p>The theoretical region is a square, but central inputs reach the output through far more paths. The deeper the stack, the closer it gets to a Gaussian.</p></div>
+    <div class="card note"><h3>1×1 Conv</h3>
+      <code>RF = 1,   params = C_in·C_out</code>
+      <p>Mixes channels per pixel without looking at space. Used in bottlenecks that shrink and restore channels (ResNet-50, GoogLeNet).</p></div>
+  </div>
+
+  <footer>Plain JavaScript, no external libraries · See the full VGG and ResNet structures in <a href="/playground/architecture.html" style="color:inherit">Architecture Blocks</a> · Made by SOL</footer>
+</main>
+<script>
+(() => {
+
+  // ================= Receptive field =================
+  const CS = 10, GAP = 40, LBL = 22;
+  let K = 3, LN = 3, N = 13, sel = [6, 6];
+  const rfOf = (k, l) => l * (k - 1) + 1;
+
+  function pathCounts(k, layers) {
+    let m = Array.from({ length: N }, () => new Array(N).fill(0));
+    m[sel[0]][sel[1]] = 1;
+    const maps = [m], r = (k - 1) / 2;
+    for (let l = 0; l < layers; l++) {
+      const n = Array.from({ length: N }, () => new Array(N).fill(0));
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (m[i][j])
+        for (let di = -r; di <= r; di++) for (let dj = -r; dj <= r; dj++) {
+          const a = i + di, b = j + dj;
+          if (a >= 0 && a < N && b >= 0 && b < N) n[a][b] += m[i][j];
+        }
+      maps.unshift(n); m = n;
+    }
+    return maps;
+  }
+  function bbox(m) {
+    let r0 = N, r1 = -1, c0 = N, c1 = -1;
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (m[i][j]) { r0 = Math.min(r0, i); r1 = Math.max(r1, i); c0 = Math.min(c0, j); c1 = Math.max(c1, j); }
+    return [r0, r1, c0, c1];
+  }
+  let GW, W, FS, xs;
+  function layout() {
+    GW = N * CS;
+    W = (LN + 1) * GW + LN * GAP;
+    FS = Math.max(11, W / 62);
+    xs = Array.from({ length: LN + 1 }, (_, k) => k * (GW + GAP));
+    [svgA, svgB].forEach(s => { s.setAttribute("viewBox", `0 0 ${W} ${GW + LBL + FS}`); s.style.maxWidth = `${(LN + 1) * 150 + LN * 46}px`; });
+  }
+  function gridSVG(m, x0, label, isOut) {
+    const mx = Math.max(...m.flat());
+    let g = "";
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      const v = m[i][j] / mx;
+      const fill = m[i][j] ? `rgba(224,138,0,${0.15 + 0.85 * v})` : "#f6f6f3";
+      g += `<rect x="${x0 + j * CS + 0.5}" y="${i * CS + 0.5}" width="${CS - 1}" height="${CS - 1}" rx="1.5" fill="${fill}"/>`;
+    }
+    const [r0, r1, c0, c1] = bbox(m);
+    g += `<rect x="${x0 + c0 * CS}" y="${r0 * CS}" width="${(c1 - c0 + 1) * CS}" height="${(r1 - r0 + 1) * CS}" fill="none" stroke="#8a5300" stroke-width="1.4" rx="2"/>`;
+    g += `<text x="${x0 + GW / 2}" y="${GW + LBL}" text-anchor="middle" font-size="${FS}" fill="#6b6f76">${label}${isOut ? "" : ` · ${r1 - r0 + 1}×${c1 - c0 + 1}`}</text>`;
+    return g;
+  }
+  function connector(mA, xA, mB, xB) {
+    const [a0, a1, , ac1] = bbox(mA), [b0, b1, bc0] = bbox(mB);
+    return `<polygon points="${xA + (ac1 + 1) * CS},${a0 * CS} ${xB + bc0 * CS},${b0 * CS} ${xB + bc0 * CS},${(b1 + 1) * CS} ${xA + (ac1 + 1) * CS},${(a1 + 1) * CS}" fill="rgba(224,138,0,.12)"/>`;
+  }
+
+  const svgA = document.getElementById("rfA"), svgB = document.getElementById("rfB");
+  function drawRF() {
+    const R = rfOf(K, LN);
+    const A = pathCounts(K, LN);
+    let a = "";
+    for (let k = 0; k < LN; k++) a += connector(A[k], xs[k], A[k + 1], xs[k + 1]);
+    for (let k = 0; k <= LN; k++) a += gridSVG(A[k], xs[k], k === 0 ? "Input" : k === LN ? `Output (Conv${LN})` : `Conv${k} ${K}×${K}`, k === LN);
+    svgA.innerHTML = a;
+    const B = pathCounts(R, 1);
+    let b = connector(B[0], xs[0], B[1], xs[LN]);
+    b += gridSVG(B[0], xs[0], "Input", false) + gridSVG(B[1], xs[LN], `Output (Conv ${R}×${R})`, true);
+    if (LN > 1) b += `<text x="${(xs[0] + GW + xs[LN]) / 2}" y="${GW / 2}" text-anchor="middle" font-size="${FS}" fill="#8a8e95">${R}×${R} in one step</text>`;
+    svgB.innerHTML = b;
+
+    // input weighting: center (max) vs edge (min, excluding 0); may be clipped if the selected cell is near the border
+    const inp = A[0].flat().filter(v => v > 0);
+    document.getElementById("rfWA").textContent = LN === 1 || K === 1 ? "Uniform across region" : `Center-heavy (max ${Math.max(...inp).toLocaleString()} : min ${Math.min(...inp)})`;
+  }
+
+  const fmtInt = n => n.toLocaleString("en-US");
+  function drawStats() {
+    const R = rfOf(K, LN), C = +document.getElementById("rfC").value;
+    document.getElementById("rfCV").textContent = C;
+    document.getElementById("titleA").innerHTML = `${K}×${K} Conv × ${LN} layer${LN > 1 ? "s" : ""} <span>receptive field = ${LN}·(${K}−1) + 1 = ${R}</span>`;
+    document.getElementById("titleB").innerHTML = `${R}×${R} Conv × 1 layer <span>the same receptive field in one step</span>`;
+    document.getElementById("hA").textContent = `${K}×${K} × ${LN} layer${LN > 1 ? "s" : ""}`;
+    document.getElementById("hB").textContent = `${R}×${R} × 1 layer`;
+    document.getElementById("rfA1").textContent = `${R}×${R}`;
+    document.getElementById("rfB1").textContent = `${R}×${R}`;
+    const pa = LN * K * K * C * C, pb = R * R * C * C;
+    document.getElementById("rfPA").textContent = `${LN}·(${K}·${K}·C·C) = ${fmtInt(pa)}`;
+    document.getElementById("rfPB").textContent = `${R}·${R}·C·C = ${fmtInt(pb)}`;
+    document.getElementById("rfRA").textContent = `${LN}`;
+    document.getElementById("rfRB").textContent = "1";
+    const better = pa < pb, same = pa === pb;
+    document.getElementById("rfPA").className = "mono" + (better ? " win" : "");
+    document.getElementById("rfPB").className = "mono" + (!better && !same ? " win" : "");
+    document.getElementById("rfRA").className = LN > 1 ? "win" : "";
+    let hint;
+    if (K === 1) hint = "No matter how many 1×1 layers you stack, the receptive field stays 1×1. It never looks at space and only mixes channels. Try it in the 1×1 Conv section below.";
+    else if (LN === 1) hint = "With a single layer, both setups are identical. Try adding more layers.";
+    else hint = `Covering the same ${R}×${R} region, the stack uses ${fmtInt(pa)} vs ${fmtInt(pb)} parameters (${better ? `${((1 - pa / pb) * 100).toFixed(0)}% fewer` : "more"}) and adds ${LN - 1} extra ReLU${LN - 1 > 1 ? "s" : ""}, so it can represent more complex functions.` +
+      (K === 3 && LN === 3 ? " This is why VGG stacks three 3×3 layers instead of one 7×7." : "");
+    document.getElementById("rfHint").textContent = hint;
+  }
+
+  function rebuild() {
+    const R = rfOf(K, LN);
+    N = Math.max(9, R + 6); if (N % 2 === 0) N++;
+    sel = [(N - 1) / 2, (N - 1) / 2];
+    layout(); drawRF(); drawStats();
+  }
+
+  function onMove(e) {
+    const svg = e.currentTarget, r = svg.getBoundingClientRect();
+    const pt = e.touches ? e.touches[0] : e;
+    const vb = svg.viewBox.baseVal;
+    const x = (pt.clientX - r.left) / r.width * vb.width, y = (pt.clientY - r.top) / r.height * vb.height;
+    if (x < xs[LN] || x > xs[LN] + GW || y > GW) return;
+    const j = Math.floor((x - xs[LN]) / CS), i = Math.floor(y / CS);
+    if (i !== sel[0] || j !== sel[1]) { sel = [i, j]; drawRF(); }
+  }
+  [svgA, svgB].forEach(s => { s.addEventListener("mousemove", onMove); s.addEventListener("touchstart", onMove, { passive: true }); s.addEventListener("click", onMove); });
+  document.getElementById("kSeg").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    K = +b.dataset.k; document.querySelectorAll("#kSeg button").forEach(x => x.classList.toggle("on", x === b)); rebuild();
+  };
+  document.getElementById("lSlider").oninput = e => { LN = +e.target.value; document.getElementById("lVal").textContent = LN; rebuild(); };
+  document.getElementById("rfC").oninput = drawStats;
+  rebuild();
+
+
+  // ================= 1×1 Conv =================
+  const S = 16;
+  // build a small RGB picture (sky, sun, hill, house)
+  const img = [];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let c = [0.45, 0.70, 0.95];                                     // sky
+    if (Math.hypot(x - 11.5, y - 3.5) < 2.6) c = [0.98, 0.82, 0.20]; // sun
+    const hill = 10 + 2.2 * Math.sin(x / 3.2);
+    if (y > hill) c = [0.25, 0.62 + 0.08 * ((x + y) % 2), 0.22];    // hill
+    if (x >= 3 && x <= 7 && y >= 7 && y <= 11) c = [0.86, 0.30, 0.24]; // house wall
+    if (x >= 4 && x <= 5 && y >= 9 && y <= 11) c = [0.35, 0.22, 0.15]; // door
+    if (y >= 5 && y <= 6 && x >= 2 + (6 - y) && x <= 8 - (6 - y)) c = [0.40, 0.25, 0.55]; // roof
+    img.push(c);
+  }
+
+  const W1 = [
+    { name: "Output 1", w: [0.30, 0.59, 0.11] },
+    { name: "Output 2", w: [1.0, -1.0, 0.0] }
+  ];
+  const PRESETS = {
+    "Grayscale (luma)": [0.30, 0.59, 0.11],
+    "R − G (red vs green)": [1, -1, 0],
+    "B − R (sky)": [-1, 0, 1],
+    "G only": [0, 1, 0],
+    "0 (off)": [0, 0, 0]
+  };
+
+  const grid = document.getElementById("oneGrid");
+  const panels = [["rgb", "Input RGB (3 ch)"], ["r", "Channel R"], ["g", "Channel G"], ["b", "Channel B"], ["o0", "→ Output 1 (negative = blue)"], ["o1", "→ Output 2 (negative = blue)"]];
+  grid.innerHTML = panels.map(([id, cap]) => `<figure><canvas width="${S}" height="${S}" data-p="${id}"></canvas><figcaption>${cap}</figcaption></figure>`).join("");
+  const cvs = Object.fromEntries([...grid.querySelectorAll("canvas")].map(c => [c.dataset.p, c]));
+  let hover = null;
+
+  function paint(id, fn) {
+    const c = cvs[id], ctx = c.getContext("2d"), im = ctx.createImageData(S, S);
+    for (let k = 0; k < S * S; k++) {
+      const [r, g, b] = fn(k);
+      im.data.set([r * 255, g * 255, b * 255, 255], k * 4);
+    }
+    ctx.putImageData(im, 0, 0);
+    if (hover !== null) {
+      ctx.strokeStyle = "#ff2d55"; ctx.lineWidth = 0.35;
+      ctx.strokeRect(hover % S + 0.15, Math.floor(hover / S) + 0.15, 0.7, 0.7);
+    }
+  }
+  const out = (o, k) => o.w[0] * img[k][0] + o.w[1] * img[k][1] + o.w[2] * img[k][2];
+  const showVal = v => v >= 0 ? [Math.min(v, 1), Math.min(v, 1), Math.min(v, 1)] : [0.85 + 0.15 * v, 0.9 + 0.1 * v, 1].map(c => Math.max(0, c)).map((c, i) => i === 2 ? 1 : c * (1 - Math.min(-v, 1) * 0.6));
+
+  function drawOne() {
+    paint("rgb", k => img[k]);
+    paint("r", k => [img[k][0], 0, 0]);
+    paint("g", k => [0, img[k][1], 0]);
+    paint("b", k => [0, 0, img[k][2]]);
+    paint("o0", k => showVal(out(W1[0], k)));
+    paint("o1", k => showVal(out(W1[1], k)));
+    const el = document.getElementById("oneCalc");
+    if (hover === null) return;
+    const [r, g, b] = img[hover], x = hover % S, y = Math.floor(hover / S);
+    el.textContent = `Channel vector at pixel (${x}, ${y}) = (R ${r.toFixed(2)}, G ${g.toFixed(2)}, B ${b.toFixed(2)})\n` +
+      W1.map(o => `${o.name} = ${o.w[0].toFixed(2)}·${r.toFixed(2)} + ${o.w[1].toFixed(2)}·${g.toFixed(2)} + ${o.w[2].toFixed(2)}·${b.toFixed(2)} = ${out(o, hover).toFixed(2)}`).join("\n") +
+      `\n→ No neighboring pixels are used. All pixels share the same ${W1.length}×3 = ${W1.length * 3} weights.`;
+  }
+
+  grid.addEventListener("mousemove", e => {
+    const c = e.target.closest("canvas"); if (!c) return;
+    const r = c.getBoundingClientRect();
+    const x = Math.min(S - 1, Math.floor((e.clientX - r.left) / r.width * S)), y = Math.min(S - 1, Math.floor((e.clientY - r.top) / r.height * S));
+    const k = y * S + x; if (k !== hover) { hover = k; drawOne(); }
+  });
+
+  const wbox = document.getElementById("wbox");
+  function buildW() {
+    wbox.innerHTML = W1.map((o, oi) => `<div class="wcard"><h4>${o.name} = w_R·R + w_G·G + w_B·B</h4>
+      ${["R", "G", "B"].map((ch, ci) => `<label><span>${ch}</span><input type="range" min="-1" max="1" step="0.01" value="${o.w[ci]}" data-o="${oi}" data-c="${ci}"><b class="mono">${o.w[ci].toFixed(2)}</b></label>`).join("")}
+      <div class="presets">${Object.keys(PRESETS).map(p => `<button data-o="${oi}" data-p="${p}">${p}</button>`).join("")}</div></div>`).join("");
+  }
+  wbox.addEventListener("input", e => {
+    const t = e.target; if (t.type !== "range") return;
+    W1[+t.dataset.o].w[+t.dataset.c] = +t.value; t.nextElementSibling.textContent = (+t.value).toFixed(2); drawOne();
+  });
+  wbox.addEventListener("click", e => {
+    const b = e.target.closest("button[data-p]"); if (!b) return;
+    W1[+b.dataset.o].w = PRESETS[b.dataset.p].slice(); buildW(); drawOne();
+  });
+  buildW(); drawOne();
+
+  // ================= Bottleneck =================
+  function fmt(n) { return n >= 1e9 ? (n / 1e9).toFixed(2) + "G" : n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(n); }
+  function drawBN() {
+    const C = +document.getElementById("bnC").value, M = +document.getElementById("bnM").value, HW = 56 * 56;
+    document.getElementById("bnCV").textContent = C; document.getElementById("bnMV").textContent = M;
+    const direct = 9 * C * C;
+    const bott = C * M + 9 * M * M + M * C;
+    const rows = [
+      ["3×3 Conv (C → C)", direct, "#2f6fd6"],
+      ["1×1 → 3×3 → 1×1", bott, "#e08a00"],
+      ["  ├ 1×1 (C → C_mid)", C * M, "#f0bd6a"],
+      ["  ├ 3×3 (C_mid → C_mid)", 9 * M * M, "#f0bd6a"],
+      ["  └ 1×1 (C_mid → C)", M * C, "#f0bd6a"]
+    ];
+    const mx = Math.max(direct, bott);
+    document.getElementById("bnBars").innerHTML = rows.map(([lab, v, c]) =>
+      `<div class="bar-row"><span class="mono" style="white-space:pre">${lab}</span><div class="track"><div class="fill" style="width:${v / mx * 100}%;background:${c}"></div></div><span class="num mono">${fmt(v)}</span></div>`).join("");
+    document.getElementById("bnNote").textContent =
+      `Parameters ${fmt(direct)} → ${fmt(bott)} (` +
+      (bott < direct ? `${(direct / bott).toFixed(1)}× fewer` : bott > direct ? `${(bott / direct).toFixed(1)}× more: C_mid is too large to save anything` : "no change") +
+      `), compute ${fmt(direct * HW)} → ${fmt(bott * HW)} MACs. ` +
+      `This is exactly ResNet-50's bottleneck block (C=256, C_mid=64). Open ResNet-50 in Architecture Blocks to see it in context.`;
+  }
+  document.getElementById("bnC").oninput = drawBN; document.getElementById("bnM").oninput = drawBN;
+  drawBN();
+
+})();
+</script>
+</body>
+</html>
