@@ -1,6 +1,6 @@
 ---
 title: "VAE: Variational Auto-Encoder"
-date: "2026-11-17"
+date: "2026-11-25"
 description: "Paper reading notes"
 author: "Soleun Won"
 tags:
@@ -29,10 +29,7 @@ tags:
 
 → loss의 두 번째 항, **KL (Regularization)**
 
-```
-loss = (다시 그린 그림이 원본과 같은가)  +  (z가 N(0, I) 근처에 있는가)
-       └──── Reconstruction ────┘        └──────── KL ────────┘
-```
+$$\text{loss} = \underbrace{\text{다시 그린 그림이 원본과 같은가}}_{\text{Reconstruction}} + \underbrace{z\text{가 } N(0, I) \text{ 근처에 있는가}}_{\text{KL}}$$
 
 ---
 
@@ -79,12 +76,16 @@ $$
 \end{aligned}
 $$
 
+<br>
+
 ### 3.2 해석해보자
 
 - **KL ≥ 0** 이므로 **ELBO ≤ log p(x)**. 그래서 이름이 Evidence **Lower** BOund다.
 - `log p(x)`는 `q`와 무관한 고정값이다. 따라서 **ELBO를 키우면 KL이 줄어든다.** 즉 `q`가 True posterior에 가까워진다.
 - `q`가 True posterior와 같아지면 KL = 0이고 ELBO = log p(x)다.
 - 계산할 수 없는 `log p(x)` 대신 **계산할 수 있는 ELBO를 최대화**한다. 이게 VAE 학습
+
+<br>
 
 ### 3.3 다른 유도: Jensen 부등식
 
@@ -111,6 +112,8 @@ $$
 
 $$\mathcal{L}(\theta, \phi; x) = \underbrace{-\mathbb{E}_{q_\phi(z|x)}\left[\log p_\theta(x|z)\right]}_{\text{Reconstruction error}} + \underbrace{D_{KL}\big(q_\phi(z|x)\,\|\,p(z)\big)}_{\text{Regularization error}}$$
 
+<br>
+
 ### 주의할 점
 
 | | 3장의 KL | 4장의 KL |
@@ -129,6 +132,8 @@ $$\mathcal{L}(\theta, \phi; x) = \underbrace{-\mathbb{E}_{q_\phi(z|x)}\left[\log
 
 encoder는 `μ, σ`를 내놓는다. decoder에 입력으로 넣기 위해 `z ~ q_φ(z|x)`를 샘플링해야한다. 근데 샘플링은 미분할 수 없는 연산이라 encoder 파라미터 φ로 gradient가 전달되지 않는다.
 
+<br>
+
 ### 해결
 
 random node를 바깥으로 빼낸다. → $\epsilon$ 추가
@@ -140,16 +145,16 @@ $$z = \mu + \sigma \odot \epsilon, \qquad \epsilon \sim \mathcal{N}(0, I)$$
 - 분포는 그대로다. `μ + σε`는 여전히 `N(μ, σ²)`를 따른다.
 
 
-```
+```python
 import torch
 
 def reparameterize(mu, sigma):
     eps = torch.randn_like(std)  # 평균이 0이고 분산이 1인 표준 정규 분포에서 무작위 샘플링
     return mu + eps*sigma  # Reparameterization Trick
 
-x = torch.randn((1, 3, 28, 28)) # 랜덤 이미지 (Batch, Channels, Height, Width)
+x = torch.randn((1, 1, 28, 28)) # 랜덤 이미지 (Batch, Channels, Height, Width)
 mu, sigma = vae_encoder(x)  # 인코더에서 출력된 평균과 분산
-z = reparameterize(mu, sigma)  # Reparameterization Trick를 통한 샘플링
+z = reparameterize(mu, sigma)  # Reparameterization Trick를 통한 샘플링 
 ```
 
 
@@ -162,14 +167,14 @@ DDPM은 encoder가 고정되어 있고, latent variable이 T단계의 Markov cha
 | | VAE | DDPM |
 | --- | --- | --- |
 | 데이터 | `x` | `x_0` |
-| 잠재 변수 | `z` 하나 | `x_1, …, x_T` |
+| latent variable | `z` 하나 | `x_1, …, x_T` |
 | encoder | `q_φ(z\|x)`, **학습함** | forward `q(x_t\|x_{t−1})`, noise 넣기, **고정** |
 | decoder | `p_θ(x\|z)`, 한 번에 reconstruction | reverse `p_θ(x_{t−1}\|x_t)`, **T번 나눠** reconstruction |
 | prior | `N(0, I)` | `p(x_T) = N(0, I)` |
 
 같은 방식으로 ELBO를 쓰면 DDPM loss의 세 항이 나온다.
 
-$$-\log p_\theta(x_0) \le \mathbb{E}_q\Big[\underbrace{D_{KL}(q(x_T|x_0)\,\|\,p(x_T))}_{L_T:\ \text{VAE의 KL 항}} + \sum_{t=2}^{T}\underbrace{D_{KL}(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t))}_{L_{t-1}:\ \text{VAE에 없는 항}} \underbrace{-\log p_\theta(x_0|x_1)}_{L_0:\ \text{VAE의 복원 항}}\Big]$$
+$$-\log p_\theta(x_0) \le \mathbb{E}_q\Big[\underbrace{D_{KL}(q(x_T|x_0)\,\|\,p(x_T))}_{L_T:\ \text{VAE의 KL 항}} + \sum_{t=2}^{T}\underbrace{D_{KL}(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t))}_{L_{t-1}:\ \text{VAE에 없는 항}} \underbrace{-\log p_\theta(x_0|x_1)}_{L_0:\ \text{VAE의 reconstruction 항}}\Big]$$
 
 - **L_T:** encoder가 고정이라 학습할 것이 없는 상수 → 무시
 - **L_0:** 마지막 한 단계 reconstruction
