@@ -5,7 +5,7 @@ export const SITE: SiteConfig = {
     author: "Soleun Won",
     desc: "Personal academic portfolio and blog of Soleun Won",
     title: "Soleun Won",
-    ogImage: "shannon.webp",
+    ogImage: "/brown_ver.jpg",
     postPerPage: 5,
     favicon: "/favicon.svg",
     lang: "en",

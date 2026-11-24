@@ -17,12 +17,13 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 ## 1. 논문
 
 
-|  | 자료 | 읽는 범위 | 목적 |
-| --- | --- | --- | --- | --- |
+
+| 순서 | 자료 | 읽는 범위 | 목적 |
+| --- | --- | --- | --- |
 | 1 | Lilian Weng, [What are Diffusion Models?](https://lilianweng.github.io/posts/2021-07-11-diffusion-models) | 첫 섹션(forward · reverse · 학습 loss)과 "Speed up Diffusion Models"의 DDIM 부분 | Diffusion 원리를 글과 그림으로 먼저 잡기 |
 | 2 | Ho et al., [DDPM](https://arxiv.org/abs/2006.11239) (NeurIPS 2020) | 2장(Background), 3장(학습 목표), Algorithm 1 · 2 | 노이즈 예측 학습과 샘플링 절차를 원문으로 확인 |
 | 3 | Chi et al., [Diffusion Policy](https://arxiv.org/abs/2303.04137) (RSS 2023 / IJRR 2024) | **정독.** 아래 2.1의 섹션 안내 참고 | 연구에서 쓰는 모델과 PushT 과제의 원논문 |
-| 4 | Lin et al., [Data Scaling Laws](https://arxiv.org/abs/2410.18647) (ICLR 2025) | 1장, 3장, 4장, 7장. Fig. 4와 Fig. 7 | "양보다 다양성"이라는 연구 출발점 |
+| 4 | Lin et al., [Data Scaling Laws](https://arxiv.org/abs/2410.18647) (ICLR 2025) | 1장, 3장, 4장, 7장. Fig. 4와 Fig. 7. 아래 2.2 참고 | "양보다 다양성"이라는 연구 출발점 |
 | 추가 | Diffusion Policy 저자의 [state 기반 PushT Colab](https://colab.research.google.com/drive/1gxdkgRVfM55zihY9TFLja97cSVZOZq2B?usp=sharing) | 코드를 위에서 아래로 읽기 (실행은 선택) | 논문 내용이 코드에서 어떻게 구현되는지 확인 |
 
 <br>
@@ -33,7 +34,7 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 <br>
 
-### 2.1 [1] Diffusion Policy 
+### 2.1 Diffusion Policy
 
 **집중해서 읽을 부분**
 
@@ -63,7 +64,7 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 <br>
 
-### 2.2 [2] Data Scaling Laws
+### 2.2 Data Scaling Laws
 
 **집중해서 읽을 부분:** 1장(서론), 3장(Approach), 4장(Data Scaling Laws), 7장(한계)
 
@@ -89,10 +90,12 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 ---
 
-## 3. 선행 연구와의 차이점
+## 3. 원논문 설정과 비교
+
+Diffusion Policy 원논문과 공식 저장소를 직접 확인해, 본 연구의 설정과 같은 점과 다른 점을 나눴다.
 
 
-### 3.1 본 연구와 일치하는 부분
+### 3.1 원논문과 같은 점
 
 - **Horizon 설정:** Diffusion Policy 논문 Appendix A.4에서 PushT는 T_o = 2, T_a = 8, T_p = 16이다.
 - **정규화:** 논문 Appendix A.1은 각 차원을 min-max로 [-1, 1]에 맞춘다. 평균 0 · 분산 1 정규화를 쓰지 않는 이유는 DDPM이 매 step 예측값을 [-1, 1]로 자르기 때문이다. 
@@ -101,12 +104,12 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 <br>
 
-### 3.2 주의할 부분
+### 3.2 원논문과 다른 점
 
-|  | 논문 · 저장소 | 계획서 | 할 일 |
+|  | 논문 · 저장소 | 본 연구 | 처리 |
 | --- | --- | --- | --- |
-| 시연 수 | 논문 Table 3은 PushT 시연 200개로 표기 | 데이터셋 기준 206개 | 3주차에 실제 에피소드 수를 세어 확인. 본문에는 데이터셋 기준 수를 쓴다 |
-| keypoint 수 | 논문은 블록 keypoint 9개로 설명 | LeRobot 데이터셋은 16D(8개) | 3주차 schema 확인 때 실제 차원을 기록 |
+| 시연 수 | 논문 Table 3은 PushT 시연 200개로 표기 | 데이터셋 기준 206개 | 데이터셋을 내려받아 실제 에피소드 수를 세어 확인. 본문에는 데이터셋 기준 수를 쓴다 |
+| keypoint 수 | 논문은 블록 keypoint 9개로 설명 | LeRobot 데이터셋은 16차원(8개) | 데이터셋 카드와 공개 checkpoint config에서 16차원임을 확인. 본문에는 데이터셋 기준으로 쓴다 |
 | 평가 지표 | 논문은 PushT에 target area coverage를 사용 | success rate + max coverage | 논문의 PushT 수치와 내 success rate를 직접 비교하지 않는다 |
 | checkpoint 선택 | 공식 저장소 README: 논문 수치는 `max`, `k_min_train_loss` 집계값 | 마지막 checkpoint 평가 | 내 수치가 논문보다 낮게 나와도 집계 방식 차이일 수 있다 |
 | 공개 checkpoint 점수 | 공식 저장소의 lowdim 예시 checkpoint는 평균 점수 약 0.92–0.97 | 참고용으로만 사용 | coverage 점수이므로 success rate와 다른 값이다 |
@@ -115,7 +118,7 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 ---
 
-## 4. 스스로 대답할 수 있어야 한다
+## 4. 스스로 대답할 수 있어야 함
 
 **Diffusion 기본**
 1. forward process와 reverse process는 각각 무엇을 하는가?
@@ -139,7 +142,7 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 ---
 
-## 환경 설정
+## 5. 환경 설정
 
 |  | 설정 | 비고 |
 | --- | --- | --- |
@@ -155,7 +158,7 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 ---
 
-## 데이터
+## 6. 데이터
 
 |  | 내용 |
 | --- | --- |
@@ -186,7 +189,7 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 ---
 
-## 모델 설정
+## 7. 모델 설정
 
 : 공개 checkpoint `lerobot/diffusion_pusht_keypoints`의 config를 그대로 따르며, 모든 실험 조건에 동일하게 적용한다.
 
@@ -205,7 +208,7 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 
 ---
 
-## 4. 평가 설정과 재현 정보
+## 8. 평가 설정과 재현 정보
  
 |  | 내용 |
 | --- | --- |
@@ -217,17 +220,6 @@ description: "PushT Diffusion Policy 연구의 선행연구 정리와 실험 설
 | checkpoint | 마지막 checkpoint를 평가 (best checkpoint를 고르지 않음) |
 | 기록 항목 | LeRobot commit hash, 데이터셋 버전, config 파일, subset 에피소드 목록 |
 
-**주의:** 시연 206개 전체로 학습한 baseline의 success rate도 100%가 아니라 70% 안팎으로 나오는 것이 정상이다. 같은 step 수로 18회 학습하면 90시간 이상이 걸리므로, 학습 step 수는 소요 시간을 직접 잰 뒤 정한다.
-
-<br>
-
----
-
-## Appendix
-
-**학습 자료**
-- Lilian Weng, [What are Diffusion Models?](https://lilianweng.github.io/posts/2021-07-11-diffusion-models)
-- Hugging Face, [Diffusion Course Unit 1](https://huggingface.co/learn/diffusion-course/unit1/1) (실습 노트북 2개: Introduction to Diffusers, Diffusion Models from Scratch)
-
-**코드**
-- [Diffusion Policy 공식 저장소](https://github.com/columbia-ai-robotics/diffusion_policy) · [state 기반 Colab](https://colab.research.google.com/drive/1gxdkgRVfM55zihY9TFLja97cSVZOZq2B?usp=sharing) · [vision 기반 Colab](https://colab.research.google.com/drive/18GIHeOQ5DyjMN8iIRZL2EKZ0745NLIpg?usp=sharing)
+**주의**
+- 공개 checkpoint의 success rate가 71.0%(500 에피소드, 모델 카드 기준)이므로, 시연 206개 전체로 학습한 baseline도 100%에 가깝게 나오지 않을 수 있다.
+- 공개 checkpoint는 200,000 step 학습에 약 5시간이 걸렸다. 같은 step 수로 18회 학습하면 90시간 이상이 걸리므로, 학습 step 수는 소요 시간을 직접 잰 뒤 정한다.

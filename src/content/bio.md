@@ -18,7 +18,7 @@ I am interested in building generalist robotic agents that can perceive, reason,
 
 ## Current Work
 
-I am developing **WatchOut!**, an AI-powered video analysis system that detects suspicious behavior in unmanned stores and generates evidence-based reports with suggested response actions.
+I am conducting an **undergraduate research project (UROP)** on imitation learning for robot manipulation. Using Diffusion Policy in the PushT simulation environment, I study how the number of demonstrations and the diversity of their initial states affect task performance and generalization to unseen situations.
 
 I am also building a **domain-specific chatbot** for the shipbuilding industry that answers questions based on technical documents, helping users find accurate information quickly.
 
