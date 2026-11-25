@@ -39,12 +39,12 @@ $$\text{loss} = \underbrace{\text{다시 그린 그림이 원본과 같은가}}_
 | --- | --- | --- |
 | `x` | 데이터 | 그림 |
 | `z` | latent variable | 숨은 설정값 |
-| `p(z)` | prior | `N(0, I)`로 정해 둠 |
-| `p_θ(x\|z)` | likelihood | **decoder**. `z`로 `x`를 만듦 |
-| `p(x)` | **marginal likelihood (evidence)** | 데이터가 나올 확률. 최대화하고 싶은 것 |
-| `p(z\|x)` | posterior | `x`를 봤을 때 진짜 `z`의 분포 |
-| `q_φ(z\|x)` | approximate posterior | **encoder**. `p(z|x)`를 따르는 신경망 |
-| `p(x, z)` | joint distribution | `p_θ(x|z) · p(z)` |
+| `p(z)` | prior | N(0, I)로 정해 둠 |
+| `p_θ(x\|z)` | likelihood | decoder. z로 x를 만듦 |
+| `p(x)` | marginal likelihood (evidence) | 데이터가 나올 확률. 최대화하고 싶은 것 |
+| `p(z\|x)` | posterior | x를 봤을 때 진짜 z의 분포 |
+| `q_φ(z\|x)` | approximate posterior | encoder, p(z\x)를 따름 |
+| `p(x, z)` | joint distribution | p_θ(x\z) · p(z) |
 
 θ는 decoder의 파라미터, φ는 encoder의 파라미터다.
 
@@ -81,9 +81,13 @@ $$
 ### 3.2 해석해보자
 
 - **KL ≥ 0** 이므로 **ELBO ≤ log p(x)**. 그래서 이름이 Evidence **Lower** BOund다.
-- `log p(x)`는 `q`와 무관한 고정값이다. 따라서 **ELBO를 키우면 KL이 줄어든다.** 즉 `q`가 True posterior에 가까워진다.
+- `log p(x)`는 `q`와 무관하다. 따라서 **ELBO를 키우면 KL이 줄어든다.** 즉 `q`가 True posterior에 가까워진다.
 - `q`가 True posterior와 같아지면 KL = 0이고 ELBO = log p(x)다.
 - **ELBO를 최대화**하는 게 VAE 학습
+
+### q(encoder)를 어떻게 바꿔도 log p(x)의 값은 변하지 않는다.
+
+$$p_\theta(x) = \int p_\theta(x|z)\,p(z)\,dz$$
 
 <br>
 
@@ -146,8 +150,8 @@ $$\mathcal{L}_{\text{recon}} = -\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]$$
 
 | 파라미터 |  | 무엇을 학습하는가? | 주로 영향을 받는 Loss |
 | --- | --- | --- | --- |
-| `θ` | Decoder | `z`로부터 `p_θ(x|z)`를 생성하는 방법 | Reconstruction |
-| `φ` | Encoder | 입력 `x`가 주어졌을 때 latent distribution `q_φ(z|x)`를 추정하는 방법 | Reconstruction + KL |
+| `θ` | Decoder | z로부터 p_θ(x\z)를 생성하는 방법 | Reconstruction |
+| `φ` | Encoder | 입력 x가 주어졌을 때 latent distribution q_φ(z\x)를 추정하는 방법 | Reconstruction + KL |
 
 
 
